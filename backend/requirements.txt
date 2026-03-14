@@ -1,0 +1,42 @@
+# ============================================================================
+# CAMPUSAID - BACKEND REQUIREMENTS
+# ============================================================================
+# Install with: pip install -r requirements.txt
+
+# Web Framework
+fastapi==0.104.1
+uvicorn==0.24.0
+pydantic==2.5.0
+python-multipart==0.0.6
+
+# ML - Multilingual Embeddings
+sentence-transformers==2.2.2
+torch==2.2.2
+
+# ML - Classification
+scikit-learn==1.3.2
+numpy==1.26.2
+joblib==1.3.2
+
+# Data Processing
+pandas>=2.0.0
+
+# Speech-to-Text (OPTIONAL - only if using voice complaints)
+# Uncomment the line below if you want local Whisper support
+# openai-whisper==20231117
+
+# OR use OpenAI API (requires API key)
+# openai>=1.0.0
+
+# Database (if you want to store complaints)
+# sqlalchemy==2.0.23
+# psycopg2-binary==2.9.9
+
+# Utilities
+python-dotenv==1.0.0
+passlib[bcrypt]==1.7.4
+langdetect==1.0.9
+
+# Database
+sqlalchemy==2.0.23
+psycopg2-binary==2.9.9

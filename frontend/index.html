@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CampusAid - Complaint System</title>
+    <style>
+        /* Simple, clean styling for college project */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            color: #667eea;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+        }
+        
+        .form-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        
+        .form-section h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+        
+        input[type="text"],
+        textarea,
+        input[type="file"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            margin-bottom: 15px;
+            transition: border-color 0.3s;
+        }
+        
+        input[type="text"]:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+            font-family: inherit;
+        }
+        
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        button:hover {
+            background: #5568d3;
+        }
+        
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .result {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 10px;
+            display: none;
+        }
+        
+        .result.success {
+            background: #d4edda;
+            border: 2px solid #28a745;
+            color: #155724;
+        }
+        
+        .result.warning {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            color: #856404;
+        }
+        
+        .result.error {
+            background: #f8d7da;
+            border: 2px solid #dc3545;
+            color: #721c24;
+        }
+        
+        .result h3 {
+            margin-bottom: 10px;
+        }
+        
+        .result-details {
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        
+        .loading {
+            text-align: center;
+            color: #667eea;
+            font-weight: 600;
+        }
+        
+        .info-box {
+            background: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+        
+        .info-box p {
+            margin: 5px 0;
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎓 CampusAid</h1>
+        <p class="subtitle">Multilingual Complaint Management System</p>
+        
+        <div class="info-box">
+            <p><strong>Supported Languages:</strong> Hindi, English, Hinglish</p>
+            <p><strong>Categories:</strong> Hostel, Academic, IT, Infrastructure, Harassment, Administration</p>
+        </div>
+        
+        <!-- TEXT COMPLAINT FORM -->
+        <div class="form-section">
+            <h2>📝 Submit Text Complaint</h2>
+            <form id="textComplaintForm">
+                <label for="studentId">Student ID (Optional)</label>
+                <input type="text" id="studentId" placeholder="e.g., 2021CS001">
+                
+                <label for="complaintText">Complaint *</label>
+                <textarea 
+                    id="complaintText" 
+                    placeholder="Describe your complaint in Hindi, English, or Hinglish...
+Example: Hot water nahi aa raha hostel mein"
+                    required
+                ></textarea>
+                
+                <button type="submit" id="textSubmitBtn">Submit Complaint</button>
+            </form>
+            
+            <div id="textResult" class="result"></div>
+        </div>
+        
+        <!-- VOICE COMPLAINT FORM -->
+        <div class="form-section">
+            <h2>🎤 Submit Voice Complaint</h2>
+            <form id="voiceComplaintForm">
+                <label for="studentIdVoice">Student ID (Optional)</label>
+                <input type="text" id="studentIdVoice" placeholder="e.g., 2021CS001">
+                
+                <label for="audioFile">Upload Audio File *</label>
+                <input 
+                    type="file" 
+                    id="audioFile" 
+                    accept="audio/*"
+                    required
+                >
+                <p style="font-size: 12px; color: #666; margin-top: -10px;">
+                    Supported formats: MP3, WAV, M4A, etc.
+                </p>
+                
+                <button type="submit" id="voiceSubmitBtn">Submit Voice Complaint</button>
+            </form>
+            
+            <div id="voiceResult" class="result"></div>
+        </div>
+    </div>
+    
+    <script>
+        // ====================================================================
+        // FRONTEND JAVASCRIPT - CONNECTS TO BACKEND API
+        // ====================================================================
+        
+        // Backend API URL
+        // Change this if your backend runs on a different port
+        const API_URL = 'http://localhost:8000';
+        
+        // ====================================================================
+        // TEXT COMPLAINT SUBMISSION
+        // ====================================================================
+        
+        document.getElementById('textComplaintForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('textSubmitBtn');
+            const resultDiv = document.getElementById('textResult');
+            
+            // Get form data
+            const studentId = document.getElementById('studentId').value;
+            const complaintText = document.getElementById('complaintText').value;
+            
+            // Validate
+            if (!complaintText.trim()) {
+                showResult(resultDiv, 'error', 'Please enter a complaint');
+                return;
+            }
+            
+            // Show loading
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Processing...';
+            resultDiv.style.display = 'none';
+            
+            try {
+                // Call backend API
+                // This is where frontend talks to backend!
+                const response = await fetch(`${API_URL}/complaints`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        complaint_text: complaintText,
+                        student_id: studentId || null
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    // Success!
+                    const resultType = data.needs_manual_review ? 'warning' : 'success';
+                    showResult(
+                        resultDiv,
+                        resultType,
+                        'Complaint Submitted Successfully',
+                        `
+                        <strong>Complaint ID:</strong> #${data.complaint_id}<br>
+                        <strong>Category:</strong> ${data.predicted_category}<br>
+                        <strong>Confidence:</strong> ${(data.confidence_score * 100).toFixed(1)}%<br>
+                        <strong>Status:</strong> ${data.needs_manual_review ? 
+                            '⚠️ Marked for manual review (low confidence)' : 
+                            '✅ Automatically routed to ' + data.predicted_category + ' department'}<br>
+                        <br>
+                        <em>Track your complaint using ID: #${data.complaint_id}</em>
+                        `
+                    );
+                    
+                    // Clear form
+                    document.getElementById('complaintText').value = '';
+                } else {
+                    // Error from backend
+                    showResult(resultDiv, 'error', 'Error', data.detail || 'Unknown error');
+                }
+            } catch (error) {
+                // Network error
+                showResult(
+                    resultDiv, 
+                    'error', 
+                    'Connection Error', 
+                    'Could not connect to backend. Make sure the server is running.'
+                );
+                console.error('Error:', error);
+            } finally {
+                // Reset button
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Submit Complaint';
+            }
+        });
+        
+        // ====================================================================
+        // VOICE COMPLAINT SUBMISSION
+        // ====================================================================
+        
+        document.getElementById('voiceComplaintForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('voiceSubmitBtn');
+            const resultDiv = document.getElementById('voiceResult');
+            
+            // Get form data
+            const studentId = document.getElementById('studentIdVoice').value;
+            const audioFile = document.getElementById('audioFile').files[0];
+            
+            // Validate
+            if (!audioFile) {
+                showResult(resultDiv, 'error', 'Please select an audio file');
+                return;
+            }
+            
+            // Show loading
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Processing Audio...';
+            resultDiv.style.display = 'none';
+            
+            try {
+                // Prepare form data
+                const formData = new FormData();
+                formData.append('audio_file', audioFile);
+                if (studentId) {
+                    formData.append('student_id', studentId);
+                }
+                
+                // Call backend API
+                const response = await fetch(`${API_URL}/complaints/voice`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    // Success!
+                    const resultType = data.needs_manual_review ? 'warning' : 'success';
+                    showResult(
+                        resultDiv,
+                        resultType,
+                        'Voice Complaint Processed',
+                        `
+                        <strong>Complaint ID:</strong> #${data.complaint_id}<br>
+                        <strong>Transcribed Text:</strong> "${data.complaint_text}"<br>
+                        <strong>Category:</strong> ${data.predicted_category}<br>
+                        <strong>Confidence:</strong> ${(data.confidence_score * 100).toFixed(1)}%<br>
+                        <strong>Status:</strong> ${data.needs_manual_review ? 
+                            '⚠️ Marked for manual review' : 
+                            '✅ Automatically routed to ' + data.category + ' department'}<br>
+                        <br>
+                        <em>Track your complaint using ID: #${data.complaint_id}</em>
+                        `
+                    );
+                    
+                    // Clear form
+                    document.getElementById('audioFile').value = '';
+                } else {
+                    // Error from backend
+                    showResult(resultDiv, 'error', 'Error', data.detail || 'Unknown error');
+                }
+            } catch (error) {
+                // Network error
+                showResult(
+                    resultDiv, 
+                    'error', 
+                    'Connection Error', 
+                    'Could not connect to backend. Make sure the server is running.'
+                );
+                console.error('Error:', error);
+            } finally {
+                // Reset button
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Submit Voice Complaint';
+            }
+        });
+        
+        // ====================================================================
+        // HELPER FUNCTION - SHOW RESULT
+        // ====================================================================
+        
+        function showResult(element, type, title, details = '') {
+            element.className = `result ${type}`;
+            element.innerHTML = `
+                <h3>${title}</h3>
+                ${details ? `<div class="result-details">${details}</div>` : ''}
+            `;
+            element.style.display = 'block';
+            
+            // Scroll to result
+            element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    </script>
+</body>
+</html>
