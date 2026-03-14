@@ -270,7 +270,7 @@ Educational project for Bennett University
 
 ## 👨‍💻 Authors
 
-Bennett University Students - Major Project 2024
+Bennett University Students - Major Project 2026
 
 ---
 
