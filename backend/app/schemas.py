@@ -7,7 +7,7 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from app.models import ComplaintStatus, InputType, UserRole
+from app.models import ComplaintStatus, InputType, UserRole, Priority, RootCause
 
 
 class ComplaintCreateRequest(BaseModel):
@@ -32,6 +32,8 @@ class ComplaintCreateRequest(BaseModel):
 class ComplaintStatusUpdateRequest(BaseModel):
     status: Optional[ComplaintStatus] = Field(default=None, description="New complaint status")
     notes: Optional[str] = Field(default=None, max_length=1000)
+    priority: Optional[Priority] = Field(default=None, description="Priority level: low, medium, high, critical")
+    root_cause: Optional[RootCause] = Field(default=None, description="Root cause analysis")
 
     @field_validator("notes")
     @classmethod
@@ -43,8 +45,8 @@ class ComplaintStatusUpdateRequest(BaseModel):
 
     @model_validator(mode="after")
     def validate_any_field_present(self):
-        if self.status is None and self.notes is None:
-            raise ValueError("At least one of status or notes must be provided")
+        if self.status is None and self.notes is None and self.priority is None and self.root_cause is None:
+            raise ValueError("At least one field must be provided")
         return self
 
 
@@ -54,6 +56,7 @@ class ComplaintSubmitResponse(BaseModel):
     complaint_text: str
     department: Optional[str] = None
     predicted_category: str
+    priority: Optional[Priority] = None
     confidence_score: float = Field(..., ge=0.0, le=1.0)
     status: ComplaintStatus
     needs_manual_review: bool
@@ -68,6 +71,7 @@ class ComplaintSubmitResponse(BaseModel):
                 "complaint_text": "Hot water not available in hostel",
                 "department": "Hostel",
                 "predicted_category": "Hostel",
+                "priority": "medium",
                 "confidence_score": 0.87,
                 "status": "auto_routed",
                 "needs_manual_review": False,
@@ -80,6 +84,19 @@ class ComplaintSubmitResponse(BaseModel):
             }
         }
     )
+
+
+class VoiceTranscriptionResponse(BaseModel):
+    success: bool
+    complaint_text: str
+    detected_language: str
+    predicted_category: str
+    suggested_department: Optional[str] = None
+    suggested_priority: Optional[Priority] = None
+    confidence_score: float = Field(..., ge=0.0, le=1.0)
+    needs_manual_review: bool
+    message: str
+    all_probabilities: Optional[dict[str, float]] = None
 
 
 class ComplaintReadResponse(BaseModel):
@@ -96,6 +113,8 @@ class ComplaintReadResponse(BaseModel):
     updated_at: Optional[datetime] = None
     resolved_at: Optional[datetime] = None
     notes: Optional[str] = None
+    priority: Optional[Priority] = None
+    root_cause: Optional[RootCause] = None
 
 
 class ComplaintListResponse(BaseModel):
@@ -113,7 +132,7 @@ class ComplaintUpdateResponse(BaseModel):
 
 class AuthRegisterRequest(BaseModel):
     username: str = Field(..., min_length=3, max_length=100)
-    password: str = Field(..., min_length=6, max_length=128)
+    password: str = Field(..., min_length=12, max_length=128)
     role: UserRole
 
 
@@ -142,3 +161,5 @@ class AuthLoginResponse(BaseModel):
     user_id: int
     username: str
     role: UserRole
+    access_token: str
+    token_type: str = "bearer"

@@ -1,8 +1,9 @@
 from typing import Optional
 from datetime import datetime, timezone
 import logging
+import asyncio
 
-from fastapi import APIRouter, Depends, File, HTTPException, Path, Query, Request, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Path, Query, Request, UploadFile
 from sqlalchemy.orm import Session
 
 from app.auth import get_current_user
@@ -14,8 +15,10 @@ from app.schemas import (
     ComplaintReadResponse,
     ComplaintStatusUpdateRequest,
     ComplaintSubmitResponse,
+    VoiceTranscriptionResponse,
     ComplaintUpdateResponse,
 )
+from app.utils.priorities import get_priority_for_category
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/complaints", tags=["Complaints"])
@@ -25,6 +28,7 @@ router = APIRouter(prefix="/complaints", tags=["Complaints"])
 async def submit_text_complaint(
     payload: ComplaintCreateRequest,
     request: Request,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     logger.info(f"Text complaint submission received (length: {len(payload.complaint_text)} chars)")
@@ -40,6 +44,7 @@ async def submit_text_complaint(
 
         result = classifier.predict(payload.complaint_text)
         logger.info(f"Complaint classified: {result['predicted_category']} (confidence: {result['confidence_score']:.2f})")
+        priority = get_priority_for_category(result["predicted_category"])
         
         status = (
             ComplaintStatus.MANUAL_REVIEW
@@ -54,7 +59,9 @@ async def submit_text_complaint(
             confidence_score=result["confidence_score"],
             status=status,
             department=result["predicted_category"],
-            student_id=payload.student_id,
+            priority=priority.value,
+            student_id=str(current_user.id),
+            owner_id=current_user.id,
             contact=payload.contact,
         )
 
@@ -71,6 +78,7 @@ async def submit_text_complaint(
             department=db_complaint.department,
             predicted_category=result["predicted_category"],
             confidence_score=result["confidence_score"],
+            priority=priority,
             needs_manual_review=result["needs_review"],
             status=status,
             message=(
@@ -88,12 +96,12 @@ async def submit_text_complaint(
         raise HTTPException(status_code=500, detail=f"Error processing complaint: {str(exc)}")
 
 
-@router.post("/voice", response_model=ComplaintSubmitResponse)
-async def submit_voice_complaint(
+@router.post("/voice", response_model=VoiceTranscriptionResponse)
+async def transcribe_voice_complaint(
     request: Request,
+    current_user: User = Depends(get_current_user),
     audio_file: UploadFile = File(...),
-    student_id: Optional[str] = None,
-    db: Session = Depends(get_db),
+    language: Optional[str] = Form(default=None),
 ):
     try:
         speech_to_text = request.app.state.speech_to_text
@@ -111,9 +119,11 @@ async def submit_voice_complaint(
             )
 
         audio_bytes = await audio_file.read()
-        transcription = speech_to_text.transcribe_from_bytes(
+        transcription = await asyncio.to_thread(
+            speech_to_text.transcribe_from_bytes,
             audio_bytes,
             filename=audio_file.filename,
+            language=language,
         )
         complaint_text = transcription["text"]
 
@@ -123,51 +133,46 @@ async def submit_voice_complaint(
                 detail="Could not transcribe audio. Please try again with clearer audio.",
             )
 
-        result = classifier.predict(complaint_text)
-        status = (
-            ComplaintStatus.MANUAL_REVIEW
-            if result["needs_review"]
-            else ComplaintStatus.AUTO_ROUTED
-        )
-
-        db_complaint = Complaint(
-            complaint_text=complaint_text,
-            input_type=InputType.VOICE,
-            predicted_category=result["predicted_category"],
-            confidence_score=result["confidence_score"],
-            status=status,
-            department=result["predicted_category"],
-            student_id=student_id,
-            contact=None,
-        )
-
-        db.add(db_complaint)
-        db.commit()
-        db.refresh(db_complaint)
-
-        return ComplaintSubmitResponse(
+        result = await asyncio.to_thread(classifier.predict, complaint_text)
+        suggested_priority = get_priority_for_category(result["predicted_category"])
+        return VoiceTranscriptionResponse(
             success=True,
-            complaint_id=db_complaint.id,
             complaint_text=complaint_text,
-            department=db_complaint.department,
+            detected_language=transcription.get("language", "unknown"),
             predicted_category=result["predicted_category"],
+            suggested_department=result["predicted_category"],
+            suggested_priority=suggested_priority,
             confidence_score=result["confidence_score"],
             needs_manual_review=result["needs_review"],
-            status=status,
-            message=f"Voice transcribed and stored (ID: {db_complaint.id}, Language: {transcription['language']})",
+            message="Voice transcribed successfully. Review and edit before final submission.",
             all_probabilities=result["all_probabilities"],
         )
     except HTTPException:
         raise
     except Exception as exc:
-        db.rollback()
         raise HTTPException(status_code=500, detail=f"Voice processing error: {str(exc)}")
 
 
+@router.get("/meta/categories")
+async def get_categories(request: Request, current_user: User = Depends(get_current_user)):
+    classifier = request.app.state.classifier
+    if classifier.classifier is None:
+        raise HTTPException(status_code=503, detail="Classifier not loaded")
+    return {"categories": classifier.categories, "total": len(classifier.categories)}
+
+
 @router.get("/{complaint_id}", response_model=ComplaintReadResponse)
-async def get_complaint(complaint_id: int, db: Session = Depends(get_db)):
+async def get_complaint(
+    complaint_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     complaint = db.query(Complaint).filter(Complaint.id == complaint_id).first()
     if not complaint:
+        raise HTTPException(status_code=404, detail=f"Complaint #{complaint_id} not found")
+    if current_user.role in {UserRole.STUDENT, UserRole.WORKER} and complaint.owner_id != current_user.id:
+        raise HTTPException(status_code=404, detail=f"Complaint #{complaint_id} not found")
+    if current_user.role == UserRole.WARDEN and complaint.department != "Hostel":
         raise HTTPException(status_code=404, detail=f"Complaint #{complaint_id} not found")
     return complaint.to_dict()
 
@@ -197,6 +202,12 @@ async def update_complaint_status(
 
         if payload.notes is not None:
             complaint.notes = payload.notes
+
+        if payload.priority is not None:
+            complaint.priority = payload.priority.value
+
+        if payload.root_cause is not None:
+            complaint.root_cause = payload.root_cause.value
 
         if (
             payload.status is not None
@@ -230,9 +241,15 @@ async def list_complaints(
     student_id: Optional[str] = None,
     limit: int = Query(default=50, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> ComplaintListResponse:
     query = db.query(Complaint)
+
+    if current_user.role in {UserRole.STUDENT, UserRole.WORKER}:
+        query = query.filter(Complaint.owner_id == current_user.id)
+    elif current_user.role == UserRole.WARDEN:
+        query = query.filter(Complaint.department == "Hostel")
 
     if status:
         query = query.filter(Complaint.status == status)
@@ -257,13 +274,3 @@ async def list_complaints(
     }
 
 
-@router.get("/meta/categories")
-async def get_categories(request: Request):
-    classifier = request.app.state.classifier
-    if classifier.classifier is None:
-        raise HTTPException(status_code=503, detail="Classifier not loaded")
-
-    return {
-        "categories": classifier.categories,
-        "total": len(classifier.categories),
-    }

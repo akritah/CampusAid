@@ -23,23 +23,23 @@ export function AuthContainer({ children }: AuthContainerProps) {
           A transparent, accountable, and secure channel for raising, tracking, and resolving campus concerns.
         </p>
 
-        <div className="mt-8">
+        <div className="auth-feature-list">
           <div className="auth-feature-card">
-            <span>🧭</span>
+            <span className="auth-feature-icon">🧭</span>
             <div>
               <p className="auth-feature-title">Smart Routing</p>
               <p className="auth-feature-desc">Classify and direct complaints to the right department.</p>
             </div>
           </div>
           <div className="auth-feature-card">
-            <span>🔐</span>
+            <span className="auth-feature-icon">🔐</span>
             <div>
               <p className="auth-feature-title">Secure Access</p>
               <p className="auth-feature-desc">Role-based login with protected workflows for every user.</p>
             </div>
           </div>
           <div className="auth-feature-card">
-            <span>📈</span>
+            <span className="auth-feature-icon">📈</span>
             <div>
               <p className="auth-feature-title">Transparent Tracking</p>
               <p className="auth-feature-desc">Monitor status and resolution history in real time.</p>
@@ -50,8 +50,8 @@ export function AuthContainer({ children }: AuthContainerProps) {
 
       <section className="auth-right">
         <div className="auth-form-wrap">
-          <h2 className="auth-form-title">Welcome Back</h2>
-          <p className="auth-form-subtitle">Select your role and sign in to continue.</p>
+          <h2 className="auth-welcome-title">Welcome Back</h2>
+          <p className="auth-welcome-subtitle">Select your role and sign in to continue.</p>
 
           {children}
 

@@ -1,0 +1,44 @@
+services:
+  - type: web
+    name: campusaid-api
+    runtime: python
+    plan: standard
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    disk:
+      name: campusaid-persistent-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.11
+      - key: APP_ENV
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: POLICY_STORAGE_DIR
+        value: /var/data/policies
+      - key: HF_HOME
+        value: /var/data/huggingface
+      - key: CLASSIFIER_MODEL_PATH
+        value: ./models/complaint_classifier.pkl
+      - key: WHISPER_MODEL
+        value: small
+      - key: WHISPER_DECODE_PRESET
+        value: fast
+      - key: USE_FASTER_WHISPER
+        value: "true"
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-3.5-flash-lite
+      - key: ALLOW_STAFF_REGISTRATION
+        value: "false"
+      - key: DEMO_USERS_JSON
+        sync: false

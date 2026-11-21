@@ -1,0 +1,29 @@
+{
+  "description": "Fixed evaluation prompts for the university policy question answering flow. Add expected source filenames and key facts after approved policy documents are installed.",
+  "cases": [
+    {
+      "id": "policy_present_attendance",
+      "question": "What attendance requirement applies to students?",
+      "expected_behavior": "Cite a retrieved official policy passage containing the attendance requirement.",
+      "expected_abstention": false
+    },
+    {
+      "id": "policy_present_grading",
+      "question": "How can a student request a review of an examination result?",
+      "expected_behavior": "Cite a retrieved official policy passage describing the review process, if present.",
+      "expected_abstention": false
+    },
+    {
+      "id": "policy_absent_specific",
+      "question": "What exact penalty applies to a third library book overdue by more than 41 days?",
+      "expected_behavior": "Abstain unless an official policy passage directly supports the detail.",
+      "expected_abstention": true
+    },
+    {
+      "id": "policy_absent_unrelated",
+      "question": "Does the university reimburse students for buying a private car?",
+      "expected_behavior": "Abstain when no relevant official policy passage is available.",
+      "expected_abstention": true
+    }
+  ]
+}

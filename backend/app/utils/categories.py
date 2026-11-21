@@ -3,13 +3,28 @@ Category to Department mapping for complaint management system.
 Maps complaint categories to their responsible departments.
 """
 
+"""
+Category to Department mapping for complaint management system.
+Maps complaint categories to their responsible departments.
+"""
+
 CATEGORY_TO_DEPARTMENT = {
-    "IT": "Information Technology",
-    "Infrastructure": "Facilities & Infrastructure",
-    "Hostel": "Hostel Management",
     "Academic": "Academic Affairs",
-    "Harassment": "Human Resources",
-    "Administration": "Administrative Services",
+    "Hostel": "Hostel / Residence",
+    "IT": "IT & Infrastructure",
+    "Cafeteria": "Cafeteria / Mess",
+    "Library": "Library",
+    "Transport": "Transport",
+    "Health": "Health Center / Medical",
+    "Finance": "Finance & Fees",
+    "Examination": "Examination Cell",
+    "Student Affairs": "Student Affairs",
+    "Sports": "Sports & Recreation",
+    "Security": "Security",
+    "Maintenance": "Maintenance & Housekeeping",
+    "HR": "HR / Faculty Relations",
+    "Placement": "Placement Cell",
+    "Administration": "Administration",
 }
 
 # Reverse mapping for lookups

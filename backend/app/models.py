@@ -68,6 +68,44 @@ class UserRole(str, enum.Enum):
     WARDEN = "warden"
 
 
+class Priority(str, enum.Enum):
+    """
+    Priority level of the complaint.
+    
+    LOW: Minor inconvenience
+    MEDIUM: Affects academic workflow
+    HIGH: Multiple students affected
+    CRITICAL: Safety or legal concern
+    """
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    CRITICAL = "critical"
+
+
+class RootCause(str, enum.Enum):
+    """
+    Root cause of the complaint.
+    
+    INFRASTRUCTURE_FAILURE: Technical/infrastructure issue
+    POLICY_GAP: Policy-related issue
+    HUMAN_ERROR_STAFF: Staff mistake
+    HUMAN_ERROR_STUDENT: Student mistake
+    RESOURCE_SHORTAGE: Insufficient resources
+    COMMUNICATION_BREAKDOWN: Miscommunication
+    PENDING_INVESTIGATION: Under investigation
+    UNKNOWN: Not yet determined
+    """
+    INFRASTRUCTURE_FAILURE = "infrastructure_failure"
+    POLICY_GAP = "policy_gap"
+    HUMAN_ERROR_STAFF = "human_error_staff"
+    HUMAN_ERROR_STUDENT = "human_error_student"
+    RESOURCE_SHORTAGE = "resource_shortage"
+    COMMUNICATION_BREAKDOWN = "communication_breakdown"
+    PENDING_INVESTIGATION = "pending_investigation"
+    UNKNOWN = "unknown"
+
+
 # ============================================================================
 # COMPLAINT MODEL (Database Table)
 # ============================================================================
@@ -193,8 +231,12 @@ class Complaint(Base):
         index=True,
         comment="Student ID (optional, for tracking)"
     )
-    # Why optional? Anonymous complaints allowed
-    # Why index=True? Fast lookup of student's complaints
+
+    # Authenticated account ownership used for student-side access control.
+    # Nullable to preserve historical complaints that predate account linking.
+    owner_id = Column(Integer, nullable=True, index=True)
+    # Authenticated complaint access uses owner_id; student_id is retained for
+    # the legacy student number field and existing imported records.
     
     contact = Column(
         String,
@@ -236,6 +278,28 @@ class Complaint(Base):
     )
     # Why nullable=True? Only set when resolved
     
+    # ========================================================================
+    # PRIORITY & ROOT CAUSE (For Admin Dashboard)
+    # ========================================================================
+    
+    priority = Column(
+        String(20),
+        nullable=True,
+        default=Priority.MEDIUM.value,
+        comment="Priority level: low, medium, high, critical"
+    )
+    # Why nullable=True? Can be set later by admin
+    # Why default=MEDIUM? Default to medium priority
+    
+    root_cause = Column(
+        String(50),
+        nullable=True,
+        default=RootCause.UNKNOWN.value,
+        comment="Root cause analysis: infrastructure, policy, human error, etc."
+    )
+    # Why nullable=True? Will be determined during investigation
+    # Why default=UNKNOWN? Start with unknown until analyzed
+    
     notes = Column(
         String,
         nullable=True,
@@ -275,6 +339,8 @@ class Complaint(Base):
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
             "resolved_at": self.resolved_at.isoformat() if self.resolved_at else None,
+            "priority": self.priority,
+            "root_cause": self.root_cause,
             "notes": self.notes
         }
 

@@ -9,36 +9,52 @@ This project uses SQLAlchemy ORM with PostgreSQL.
 Connection is read from the DATABASE_URL environment variable.
 
 Expected format:
-    postgresql+psycopg2://username:password@localhost:5432/campusaid
+    postgresql+psycopg2://username:password@host:5432/campusaid
 
 Example:
-    DATABASE_URL=postgresql+psycopg2://postgres:postgres@localhost:5432/campusaid
+    DATABASE_URL=postgresql+psycopg2://postgres:password@host:5432/campusaid
 
-If DATABASE_URL is not set, a local PostgreSQL default is used.
+If DATABASE_URL is not set, local development uses the repository SQLite database.
 """
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+from dotenv import load_dotenv
 import os
 
 # ============================================================================
 # DATABASE CONFIGURATION
 # ============================================================================
 
+load_dotenv()
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DEFAULT_SQLITE_URL = f"sqlite:///{os.path.join(BASE_DIR, 'campusaid.db')}"
+
 # Database URL (PostgreSQL)
 # Reads from environment variable for deployment flexibility.
-# Format: postgresql+psycopg2://username:password@localhost:5432/campusaid
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql+psycopg2://postgres:password@localhost:5432/campusaid"
-)
+# Format: postgresql+psycopg2://username:password@host:5432/campusaid
+APP_ENV = os.getenv("APP_ENV", "development").lower()
+DATABASE_URL = os.getenv("DATABASE_URL", "").strip() or DEFAULT_SQLITE_URL
+if DATABASE_URL.startswith("postgres://"):
+    # Render's dashboard may provide the legacy scheme; SQLAlchemy 2 expects
+    # postgresql:// (which selects the installed psycopg2 driver).
+    DATABASE_URL = "postgresql://" + DATABASE_URL[len("postgres://"):]
+if APP_ENV == "production" and DATABASE_URL.startswith("sqlite"):
+    raise RuntimeError("Production requires DATABASE_URL to point to a persistent PostgreSQL database")
+
+engine_kwargs = {"echo": os.getenv("SQL_ECHO", "false").lower() in {"1", "true", "yes", "on"}}
+if DATABASE_URL.startswith("sqlite"):
+    engine_kwargs["connect_args"] = {"check_same_thread": False}
+else:
+    engine_kwargs.update({"pool_pre_ping": True, "pool_size": 5, "max_overflow": 5})
 
 # Create PostgreSQL engine
 # Engine manages DB connections and pooling for SQLAlchemy sessions.
 # echo=False keeps SQL logs clean; set True when debugging queries.
-engine = create_engine(DATABASE_URL, echo=False)
+engine = create_engine(DATABASE_URL, **engine_kwargs)
 
 # Create session factory bound to PostgreSQL engine
 # Session = Database transaction manager
@@ -105,6 +121,54 @@ def init_db():
     try:
         from app.models import Complaint, User  # noqa: F401
         Base.metadata.create_all(bind=engine)
+
+        # Lightweight migration for legacy SQLite databases created before
+        # priority/root_cause fields were introduced.
+        if DATABASE_URL.startswith("sqlite"):
+            with engine.begin() as conn:
+                table_info = conn.execute(text("PRAGMA table_info(complaints)")).fetchall()
+                existing_columns = {row[1] for row in table_info}
+
+                if "priority" not in existing_columns:
+                    conn.execute(
+                        text("ALTER TABLE complaints ADD COLUMN priority VARCHAR(20) DEFAULT 'medium'")
+                    )
+
+                if "root_cause" not in existing_columns:
+                    conn.execute(
+                        text("ALTER TABLE complaints ADD COLUMN root_cause VARCHAR(50) DEFAULT 'unknown'")
+                    )
+
+                if "owner_id" not in existing_columns:
+                    conn.execute(text("ALTER TABLE complaints ADD COLUMN owner_id INTEGER"))
+
+        if "postgresql" in DATABASE_URL:
+            with engine.begin() as conn:
+                conn.execute(text("ALTER TABLE complaints ADD COLUMN IF NOT EXISTS owner_id INTEGER"))
+
+        with engine.begin() as conn:
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_complaints_owner_id ON complaints (owner_id)"))
+
+        # Normalize priority values for existing records. Harassment should
+        # never remain medium/low by default.
+        with engine.begin() as conn:
+            conn.execute(
+                text(
+                    """
+                    UPDATE complaints
+                    SET priority = CASE
+                        WHEN lower(predicted_category) = 'harassment' THEN 'critical'
+                        WHEN lower(predicted_category) IN ('infrastructure', 'it') THEN 'high'
+                        WHEN lower(predicted_category) IN ('hostel', 'academic', 'administration') THEN 'medium'
+                        ELSE COALESCE(priority, 'medium')
+                    END
+                    WHERE priority IS NULL
+                       OR lower(priority) NOT IN ('low', 'medium', 'high', 'critical')
+                       OR (lower(predicted_category) = 'harassment' AND lower(COALESCE(priority, 'medium')) IN ('low', 'medium'))
+                    """
+                )
+            )
+
         print("✅ Database initialized successfully")
     except SQLAlchemyError as exc:
         message = (

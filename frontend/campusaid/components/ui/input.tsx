@@ -9,6 +9,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
     return (
       <input
         ref={ref}
+        suppressHydrationWarning
         className={cn(
           "input-field",
           className

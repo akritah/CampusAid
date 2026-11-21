@@ -8,7 +8,7 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Textarea } from "./ui/textarea";
 import { VoiceRecorder } from "./VoiceRecorder";
-import { getApiBaseUrl } from "../lib/auth";
+import { apiFetch } from "../lib/auth";
 
 export type ComplaintSubmitPayload = {
   complaint_id: number;
@@ -22,6 +22,15 @@ export type ComplaintSubmitPayload = {
 type ComplaintFormProps = {
   onSubmitted: (payload: ComplaintSubmitPayload) => void;
 };
+
+function buildTitleFromText(text: string): string {
+  const cleaned = text.replace(/\s+/g, " ").trim();
+  if (!cleaned) {
+    return "Voice Complaint";
+  }
+
+  return cleaned.split(" ").slice(0, 8).join(" ");
+}
 
 export function ComplaintForm({ onSubmitted }: ComplaintFormProps) {
   const [title, setTitle] = React.useState("");
@@ -65,7 +74,7 @@ export function ComplaintForm({ onSubmitted }: ComplaintFormProps) {
     try {
       const complaintText = `Title: ${title.trim()}\n\nDescription: ${contentForSubmission}${attachment ? `\n\nAttachment: ${attachment.name}` : ""}`;
 
-      const response = await fetch(`${getApiBaseUrl()}/submit-complaint`, {
+      const response = await apiFetch("/submit-complaint", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ complaint_text: complaintText }),
@@ -111,8 +120,9 @@ export function ComplaintForm({ onSubmitted }: ComplaintFormProps) {
       const file = new File([voiceBlob], voiceName ?? "voice-complaint.webm", { type: "audio/webm" });
       const formData = new FormData();
       formData.append("audio_file", file);
+      formData.append("language", "English");
 
-      const response = await fetch(`${getApiBaseUrl()}/voice-complaint`, {
+      const response = await apiFetch("/voice-complaint", {
         method: "POST",
         body: formData,
       });
@@ -125,21 +135,15 @@ export function ComplaintForm({ onSubmitted }: ComplaintFormProps) {
 
       const detectedText = typeof data?.complaint_text === "string" ? data.complaint_text : "";
       setTranscriptionText(detectedText);
+      if (!title.trim() && detectedText.trim().length > 0) {
+        setTitle(buildTitleFromText(detectedText));
+      }
 
       if (detectedText.trim().length === 0) {
         setWarning("Transcription is empty. Please re-record and try again.");
       } else {
-        setSuccess("Voice complaint uploaded. Review or edit the detected transcription below.");
+        setSuccess("Transcription ready. Review or edit the detected text, then click Submit Complaint.");
       }
-
-      onSubmitted({
-        complaint_id: data.complaint_id,
-        title: title.trim() || "Voice Complaint",
-        department: data.department ?? data.predicted_category ?? "Unassigned",
-        status: data.status ?? "manual_review",
-        confidence_score: Number(data.confidence_score ?? 0),
-        created_at: new Date().toISOString(),
-      });
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Unable to submit voice complaint.");
     } finally {
@@ -148,18 +152,23 @@ export function ComplaintForm({ onSubmitted }: ComplaintFormProps) {
   };
 
   return (
-    <Card>
+    <Card className="complaint-form-card">
       <CardHeader>
-        <div>
-          <p className="section-label">New Entry</p>
-          <CardTitle>Submit Complaint</CardTitle>
+        <div className="space-y-2">
+          <div className="inline-block">
+            <span className="section-label">NEW ENTRY</span>
+          </div>
+          <CardTitle className="text-2xl">Quick Submit</CardTitle>
         </div>
-        <p className="text-sm" style={{ color: "var(--slate)" }}>Provide complete details for faster grievance routing.</p>
+        <p className="text-sm text-slate-600">Provide complete details for faster grievance routing.</p>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-6">
+        {/* Text Submission Form */}
         <form onSubmit={handleTextSubmit} className="space-y-4">
           <div className="input-group">
-            <Label htmlFor="complaintTitle">Title</Label>
+            <Label htmlFor="complaintTitle" className="font-semibold">
+              Complaint Title *
+            </Label>
             <Input
               id="complaintTitle"
               value={title}
@@ -170,19 +179,23 @@ export function ComplaintForm({ onSubmitted }: ComplaintFormProps) {
           </div>
 
           <div className="input-group">
-            <Label htmlFor="complaintDescription">Description</Label>
+            <Label htmlFor="complaintDescription" className="font-semibold">
+              Description *
+            </Label>
             <Textarea
               id="complaintDescription"
-              rows={6}
+              rows={5}
               value={description}
               onChange={(event) => setDescription(event.target.value)}
-              placeholder="Explain the issue with clear details"
+              placeholder="Explain the issue with clear details..."
               required
             />
           </div>
 
           <div className="input-group">
-            <Label htmlFor="complaintAttachment">Optional File Upload</Label>
+            <Label htmlFor="complaintAttachment" className="font-semibold">
+              Attach Document (Optional)
+            </Label>
             <Input
               id="complaintAttachment"
               type="file"
@@ -191,7 +204,7 @@ export function ComplaintForm({ onSubmitted }: ComplaintFormProps) {
               }}
             />
             {attachment && (
-              <p className="text-xs" style={{ color: "var(--slate-light)" }}>Attached: {attachment.name}</p>
+              <p className="text-xs text-slate-500 mt-1">📎 Attached: {attachment.name}</p>
             )}
           </div>
 
@@ -199,6 +212,10 @@ export function ComplaintForm({ onSubmitted }: ComplaintFormProps) {
             type="submit"
             disabled={!requiredFilled || loadingText || loadingVoice}
             className="btn btn-primary w-full"
+            style={{
+              marginTop: "24px",
+              background: "linear-gradient(135deg, var(--navy-light), var(--navy))",
+            }}
           >
             {loadingText ? (
               <span className="inline-flex items-center gap-2">
@@ -206,12 +223,23 @@ export function ComplaintForm({ onSubmitted }: ComplaintFormProps) {
                 Submitting...
               </span>
             ) : (
-              "Submit Complaint"
+              "📤 Submit Complaint"
             )}
           </Button>
         </form>
 
-        <div className="border-t pt-4" style={{ borderColor: "var(--border)" }}>
+        {/* Voice Submission Section */}
+        <div
+          className="rounded-[var(--radius-lg)] p-6"
+          style={{
+            background: "linear-gradient(135deg, var(--navy), var(--navy-mid))",
+            color: "#fff",
+          }}
+        >
+          <h3 className="text-base font-bold mb-4 flex items-center gap-2">
+            <span>🎤</span> Voice Complaint
+          </h3>
+
           <VoiceRecorder
             disabled={loadingText || loadingVoice}
             onSubmitAudio={handleVoiceSubmit}
@@ -228,35 +256,70 @@ export function ComplaintForm({ onSubmitted }: ComplaintFormProps) {
           />
 
           <div className="input-group mt-4">
-            <Label htmlFor="voiceTranscription">Transcribed Text (Editable)</Label>
+            <Label
+              htmlFor="voiceTranscription"
+              className="font-semibold text-white"
+            >
+              Transcribed Text (Editable)
+            </Label>
             <Textarea
               id="voiceTranscription"
-              rows={4}
+              rows={3}
               value={transcriptionText}
               onChange={(event) => setTranscriptionText(event.target.value)}
-              placeholder="Transcription will appear here after Submit Audio."
+              placeholder="Transcription will appear here after you submit the audio..."
+              style={{
+                background: "rgba(255, 255, 255, 0.1)",
+                color: "#fff",
+                borderColor: "rgba(255, 255, 255, 0.2)",
+              }}
             />
-            <p className="text-xs" style={{ color: "var(--slate-light)" }}>
-              Hindi and Hinglish are auto-detected by backend transcription. Text is shown exactly as returned.
+            <p className="text-xs text-gray-300 mt-2">
+              ℹ️ Hindi and Hinglish are auto-detected. Text is shown exactly as returned.
             </p>
           </div>
         </div>
 
+        {/* Status Messages */}
         {success && (
-          <div className="rounded-[var(--radius)] border px-4 py-3 text-sm" style={{ borderColor: "var(--success)", background: "var(--success-bg)", color: "var(--success)" }}>
-            {success}
-          </div>
-        )}
-
-        {error && (
-          <div className="rounded-[var(--radius)] border px-4 py-3 text-sm" style={{ borderColor: "var(--danger)", background: "var(--danger-bg)", color: "var(--danger)" }}>
-            {error}
+          <div
+            className="rounded-[var(--radius)] border px-4 py-3 text-sm flex items-start gap-3"
+            style={{
+              borderColor: "var(--success)",
+              background: "var(--success-bg)",
+              color: "var(--success)",
+            }}
+          >
+            <span className="text-lg">✅</span>
+            <span>{success}</span>
           </div>
         )}
 
         {warning && (
-          <div className="rounded-[var(--radius)] border px-4 py-3 text-sm" style={{ borderColor: "var(--warning)", background: "var(--warning-bg)", color: "var(--warning)" }}>
-            {warning}
+          <div
+            className="rounded-[var(--radius)] border px-4 py-3 text-sm flex items-start gap-3"
+            style={{
+              borderColor: "var(--warning)",
+              background: "var(--warning-bg)",
+              color: "var(--warning)",
+            }}
+          >
+            <span className="text-lg">⚠️</span>
+            <span>{warning}</span>
+          </div>
+        )}
+
+        {error && (
+          <div
+            className="rounded-[var(--radius)] border px-4 py-3 text-sm flex items-start gap-3"
+            style={{
+              borderColor: "var(--danger)",
+              background: "var(--danger-bg)",
+              color: "var(--danger)",
+            }}
+          >
+            <span className="text-lg">❌</span>
+            <span>{error}</span>
           </div>
         )}
       </CardContent>

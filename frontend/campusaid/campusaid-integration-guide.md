@@ -1,5 +1,7 @@
 # CampusAid — Next.js + FastAPI Integration Guide
 
+> This document preserves early prototype examples and target structure. For the actual current repository architecture, API authentication, and Vercel/Render deployment instructions, use the root `DEPLOYMENT.md`. Production uses signed bearer tokens, environment-based API URLs/CORS, PostgreSQL, and Render persistent storage; older sample snippets below are illustrative only.
+
 ## Project Structure (Target)
 
 ```
@@ -182,7 +184,7 @@ export interface DashboardStats {
 ```typescript
 import type { Complaint, DashboardStats, User } from './types';
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 // ── Auth ──────────────────────────────────────────────────
 export async function login(email: string, password: string, role: string) {
@@ -799,3 +801,25 @@ API docs auto-generated at: **http://localhost:8000/docs**
 - [ ] Test complaint creation end-to-end
 - [ ] Wire `VoiceRecorder` component to `/voice/transcribe`
 - [ ] Add JWT token storage (`localStorage.setItem('campusaid_token', ...)`)
+
+---
+
+## PS C1 — University Policy Q&A
+
+The existing CampusAid complaint workflow remains available for submitting and tracking user-provided complaints. PS C1 adds a separate student-facing natural-language policy question flow at `/user/policies`.
+
+| Area | Earlier CampusAid idea | PS C1 addition |
+| --- | --- | --- |
+| Student interaction | Submit and track complaints | Ask questions about university policies in natural language |
+| Information source | User-submitted complaint details | Official university policy documents |
+| Document understanding | Not a core feature | Extract text from PDF, DOCX, Markdown, and text documents |
+| Intelligent search | Not a core feature | Retrieve relevant policy sections for each question |
+| AI responses | General assistance, if implemented | Return answers grounded in retrieved policy text |
+| Source citations | Not required | Quote the relevant source section and document filename |
+| Hallucination handling | Not explicitly defined | Abstain when the documents do not provide enough support |
+| Prompt engineering | Not the main focus | Keep responses extractive and source-grounded in this initial implementation |
+| Evaluation | Application functionality testing | Maintain a fixed evaluation set for answer quality and reliability |
+
+### Running the policy assistant
+
+Install the added `pypdf` and `python-docx` backend requirements. Add current approved policy publications to `backend/app/policy_documents/`, or upload them as an admin/warden with `POST /policy/documents` (multipart field `file`). Authenticated students and workers ask questions with `POST /policy/ask` and `{ "question": "..." }`. The UI is linked from the student sidebar. The fixed evaluation prompts are in `backend/policy_evaluation.json`; set expected source documents and facts against the university's approved policy corpus before using it as a release quality gate.
