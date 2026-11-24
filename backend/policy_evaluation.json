@@ -1,29 +1,77 @@
 {
-  "description": "Fixed evaluation prompts for the university policy question answering flow. Add expected source filenames and key facts after approved policy documents are installed.",
+  "description": "Canonical fixed policy QA cases; detailed observed outputs and retrieved chunks are recorded in test-data/policy_qa_run_2026-11-24.json.",
   "cases": [
     {
-      "id": "policy_present_attendance",
-      "question": "What attendance requirement applies to students?",
-      "expected_behavior": "Cite a retrieved official policy passage containing the attendance requirement.",
-      "expected_abstention": false
+      "id": "T1",
+      "question": "What is the minimum attendance required to sit for end-semester exams?",
+      "expected_behavior": "Supported answer states the 75% minimum per course, quotes the attendance source, and cites it.",
+      "expected_sources": [
+        "Bennett_Examination_Manual_AY2024-25_Attendance_Section.txt"
+      ],
+      "observed_status": "PASS"
     },
     {
-      "id": "policy_present_grading",
-      "question": "How can a student request a review of an examination result?",
-      "expected_behavior": "Cite a retrieved official policy passage describing the review process, if present.",
-      "expected_abstention": false
+      "id": "T2",
+      "question": "How do I apply for re-evaluation of my exam paper?",
+      "expected_behavior": "Supported procedural steps from the examination regulations with a source citation; otherwise clearly report the procedure is not specified.",
+      "expected_sources": [
+        "Bennett_Examination_Manual_AY2024-25.pdf"
+      ],
+      "observed_status": "FAIL"
     },
     {
-      "id": "policy_absent_specific",
-      "question": "What exact penalty applies to a third library book overdue by more than 41 days?",
-      "expected_behavior": "Abstain unless an official policy passage directly supports the detail.",
-      "expected_abstention": true
+      "id": "T3",
+      "question": "What is the procedure for taking leave from the hostel?",
+      "expected_behavior": "Supported procedure from the hostel rules with a source citation; do not substitute general practice.",
+      "expected_sources": [
+        "Bennett_Hostel_Standing_Orders.pdf",
+        "Bennett_Hostel_Policy_Amendments_AY2026-27.pdf"
+      ],
+      "observed_status": "FAIL"
     },
     {
-      "id": "policy_absent_unrelated",
-      "question": "Does the university reimburse students for buying a private car?",
-      "expected_behavior": "Abstain when no relevant official policy passage is available.",
-      "expected_abstention": true
+      "id": "T4",
+      "question": "What is the last date to pay this semester's fees?",
+      "expected_behavior": "Use a current semester fee notice if indexed; otherwise state no current deadline notice was found.",
+      "expected_sources": [
+        "current semester fee notice"
+      ],
+      "observed_status": "NOT TESTABLE"
+    },
+    {
+      "id": "T5",
+      "question": "What happens if I miss an end-semester exam?",
+      "expected_behavior": "Supported or explicitly partial answer citing examination regulations; do not treat attendance policy as an absence rule.",
+      "expected_sources": [
+        "Bennett_Examination_Manual_AY2024-25.pdf"
+      ],
+      "observed_status": "FAIL"
+    },
+    {
+      "id": "T6",
+      "question": "What are the attendance and hostel rules for medical leave?",
+      "expected_behavior": "Answer both parts using both source documents; cite attendance and hostel chunks separately.",
+      "expected_sources": [
+        "Bennett_Examination_Manual_AY2024-25_Attendance_Section.txt",
+        "Bennett_Hostel_Standing_Orders.pdf"
+      ],
+      "observed_status": "FAIL"
+    },
+    {
+      "id": "T7",
+      "question": "What is the deadline?",
+      "expected_behavior": "Ask which deadline the student means; do not guess.",
+      "expected_sources": [],
+      "observed_status": "FAIL"
+    },
+    {
+      "id": "T8",
+      "question": "When is the fee deadline?",
+      "expected_behavior": "If two actual notices with differing dates are indexed, show both sources/dates and identify the newer one only when publication dates support it.",
+      "expected_sources": [
+        "two fee notices with differing dates (not currently indexed)"
+      ],
+      "observed_status": "NOT TESTABLE"
     }
   ]
 }

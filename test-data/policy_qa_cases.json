@@ -1,20 +1,74 @@
 [
   {
-    "id": "attendance_75_percent",
-    "question": "What is the attendance criteria to appear in exams at Bennett?",
-    "expected": "State the 75% minimum per course for undergraduate and integrated-program students, explain the consequence and any manual-specified relaxation, and cite the examination manual attendance section.",
-    "expected_sources": ["Bennett_Examination_Manual_AY2024-25_Attendance_Section.txt"]
+    "id": "T1",
+    "type": "Normal",
+    "input": "What is the minimum attendance required to sit for end-semester exams?",
+    "expected": "Supported answer states the 75% minimum per course, quotes the attendance source, and cites it.",
+    "expected_sources": [
+      "Bennett_Examination_Manual_AY2024-25_Attendance_Section.txt"
+    ]
   },
   {
-    "id": "grievance_submission",
-    "question": "How do I file a grievance?",
-    "expected": "Explain the online/offline submission routes and formal written grievance requirements from the retrieved source.",
-    "expected_sources": ["Bennett_Grievance_Redressal_Policy.pdf"]
+    "id": "T2",
+    "type": "Normal",
+    "input": "How do I apply for re-evaluation of my exam paper?",
+    "expected": "Supported procedural steps from the examination regulations with a source citation; otherwise clearly report the procedure is not specified.",
+    "expected_sources": [
+      "Bennett_Examination_Manual_AY2024-25.pdf"
+    ]
   },
   {
-    "id": "unsupported_general_guidance",
-    "question": "What should I do if my student ID card is lost?",
-    "expected": "Give practical general guidance, make no unsupported Bennett-specific claims, and mark the answer as general with no policy citation.",
+    "id": "T3",
+    "type": "Normal",
+    "input": "What is the procedure for taking leave from the hostel?",
+    "expected": "Supported procedure from the hostel rules with a source citation; do not substitute general practice.",
+    "expected_sources": [
+      "Bennett_Hostel_Standing_Orders.pdf",
+      "Bennett_Hostel_Policy_Amendments_AY2026-27.pdf"
+    ]
+  },
+  {
+    "id": "T4",
+    "type": "Normal",
+    "input": "What is the last date to pay this semester's fees?",
+    "expected": "Use a current semester fee notice if indexed; otherwise state no current deadline notice was found.",
+    "expected_sources": [
+      "current semester fee notice"
+    ]
+  },
+  {
+    "id": "T5",
+    "type": "Normal",
+    "input": "What happens if I miss an end-semester exam?",
+    "expected": "Supported or explicitly partial answer citing examination regulations; do not treat attendance policy as an absence rule.",
+    "expected_sources": [
+      "Bennett_Examination_Manual_AY2024-25.pdf"
+    ]
+  },
+  {
+    "id": "T6",
+    "type": "Edge",
+    "input": "What are the attendance and hostel rules for medical leave?",
+    "expected": "Answer both parts using both source documents; cite attendance and hostel chunks separately.",
+    "expected_sources": [
+      "Bennett_Examination_Manual_AY2024-25_Attendance_Section.txt",
+      "Bennett_Hostel_Standing_Orders.pdf"
+    ]
+  },
+  {
+    "id": "T7",
+    "type": "Edge",
+    "input": "What is the deadline?",
+    "expected": "Ask which deadline the student means; do not guess.",
     "expected_sources": []
+  },
+  {
+    "id": "T8",
+    "type": "Edge",
+    "input": "When is the fee deadline?",
+    "expected": "If two actual notices with differing dates are indexed, show both sources/dates and identify the newer one only when publication dates support it.",
+    "expected_sources": [
+      "two fee notices with differing dates (not currently indexed)"
+    ]
   }
 ]

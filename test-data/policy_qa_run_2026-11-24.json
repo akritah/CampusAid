@@ -1,0 +1,198 @@
+{
+  "run_date": "2026-11-24",
+  "model": "gemini-3.5-flash-lite",
+  "method": "Live policy_qa.retrieve + policy_qa.answer using indexed policy_documents and configured Gemini API",
+  "results": [
+    {
+      "id": "T1",
+      "input": "What is the minimum attendance required to sit for end-semester exams?",
+      "expected": "SUPPORTED; 75% minimum per course, quote and source",
+      "type": "Normal",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "T1-C1",
+          "document": "Bennett_Examination_Manual_AY2024-25_Attendance_Section.txt",
+          "score": 0.858,
+          "text": "BENNETT UNIVERSITY — EXAMINATION MANUAL 2024–25 Section 10: Attendance Requirements Official source: https://www.bennett.edu.in/wp-content/uploads/2025/01/Examination-Manual-2024-25-.pdf\nUndergraduate and integrated-program students must have a minimum attendance of 75% in each course during a semester to be eligible to appear for end-semester examinations. Lectures, tutorials, and practical sessions are counted together as applicable. A student with less than 75% attendance in a course is awarded a DB grade in that course, regardless of performance in semester tests. Attendance is counted for the whole semester, and scheduled classes count as one unit regardless of contact hours.\nThe manual says the requirement applies irrespective of medical or other leave. It permits relaxation of up to 10% on specified exceptional grounds, including continuous illness of two weeks supported by a medical certificate, approved university representation, or a special personal reason recommended by the Dean and approved by the Vice Chancellor."
+        }
+      ],
+      "actual_output_json": {
+        "answer": "The minimum attendance required to sit for end-semester examinations is 75% in each course during a semester [Bennett_Examination_Manual_AY2024-25_Attendance_Section.txt].",
+        "abstained": false,
+        "sources": [
+          {
+            "document": "Bennett_Examination_Manual_AY2024-25_Attendance_Section.txt",
+            "quote": "BENNETT UNIVERSITY — EXAMINATION MANUAL 2024–25 Section 10: Attendance Requirements Official source: https://www.bennett.edu.in/wp-content/uploads/2025/01/Examination-Manual-2024-25-.pdf\nUndergraduate and integrated-program students must have a minimum attendance of 75% in each course during a semester to be eligible to appear for end-semester examinations. Lectures, tutorials, and practical sessions are counted together as applicable. A student with less than 75% attendance in a course is awarded a DB grade in that course, regardless of performance in semester tests. Attendance is counted for the whole semester, and scheduled classes count as one unit regardless of contact hours.\nThe manual says the requirement applies irrespective of medical or other leave. It permits relaxation of up to 10% on specified exceptional grounds, including continuous illness of two weeks supported by a medi",
+            "relevance": 0.858
+          }
+        ],
+        "answer_type": "policy"
+      },
+      "observed_status": "PASS",
+      "assessment": "Correct 75% per-course answer cited the retrieved Section 10 attendance text."
+    },
+    {
+      "id": "T2",
+      "input": "How do I apply for re-evaluation of my exam paper?",
+      "expected": "SUPPORTED; steps from examination regulations with quote",
+      "type": "Normal",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "T2-C1",
+          "document": "Bennett_Examination_Manual_AY2024-25_Attendance_Section.txt",
+          "score": 0.575,
+          "text": "BENNETT UNIVERSITY — EXAMINATION MANUAL 2024–25 Section 10: Attendance Requirements Official source: https://www.bennett.edu.in/wp-content/uploads/2025/01/Examination-Manual-2024-25-.pdf\nUndergraduate and integrated-program students must have a minimum attendance of 75% in each course during a semester to be eligible to appear for end-semester examinations. Lectures, tutorials, and practical sessions are counted together as applicable. A student with less than 75% attendance in a course is awarded a DB grade in that course, regardless of performance in semester tests. Attendance is counted for the whole semester, and scheduled classes count as one unit regardless of contact hours.\nThe manual says the requirement applies irrespective of medical or other leave. It permits relaxation of up to 10% on specified exceptional grounds, including continuous illness of two weeks supported by a medical certificate, approved university representation, or a special personal reason recommended by the Dean and approved by the Vice Chancellor."
+        }
+      ],
+      "actual_output_json": {
+        "answer": "The documents do not specify how to apply for the re-evaluation of an exam paper. Please contact the relevant examination office for this information.",
+        "abstained": false,
+        "sources": [
+          {
+            "document": "Bennett_Examination_Manual_AY2024-25_Attendance_Section.txt",
+            "quote": "BENNETT UNIVERSITY — EXAMINATION MANUAL 2024–25 Section 10: Attendance Requirements Official source: https://www.bennett.edu.in/wp-content/uploads/2025/01/Examination-Manual-2024-25-.pdf\nUndergraduate and integrated-program students must have a minimum attendance of 75% in each course during a semester to be eligible to appear for end-semester examinations. Lectures, tutorials, and practical sessions are counted together as applicable. A student with less than 75% attendance in a course is awarded a DB grade in that course, regardless of performance in semester tests. Attendance is counted for the whole semester, and scheduled classes count as one unit regardless of contact hours.\nThe manual says the requirement applies irrespective of medical or other leave. It permits relaxation of up to 10% on specified exceptional grounds, including continuous illness of two weeks supported by a medi",
+            "relevance": 0.575
+          }
+        ],
+        "answer_type": "policy"
+      },
+      "observed_status": "FAIL",
+      "assessment": "The retriever returned the attendance-only chunk (score 0.575); Gemini safely said re-evaluation steps were not specified."
+    },
+    {
+      "id": "T3",
+      "input": "What is the procedure for taking leave from the hostel?",
+      "expected": "SUPPORTED; steps from hostel rules with quote",
+      "type": "Normal",
+      "retrieved_chunks": [],
+      "actual_output_json": {
+        "answer": "To take leave from a university hostel, students typically need to submit a formal request through the student portal or a physical application form approved by their faculty advisor or warden. This process usually requires specifying the dates, reason for leave, and emergency contact details, and may also necessitate parental consent for extended absences. Once submitted, you must collect the approved gate pass to present to security upon departure and return. Check your hostel manual or student portal for the exact submission deadlines and required forms.",
+        "abstained": false,
+        "sources": [],
+        "answer_type": "general"
+      },
+      "observed_status": "FAIL",
+      "assessment": "No chunk was retrieved; Gemini gave general hostel-leave practices without a university citation."
+    },
+    {
+      "id": "T4",
+      "input": "What is the last date to pay this semester's fees?",
+      "expected": "SUPPORTED only if a current fee notice states a date; otherwise say no indexed date",
+      "type": "Normal",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "T4-C1",
+          "document": "Bennett_Hostel_Policy_Amendments_AY2026-27.pdf",
+          "score": 0.717,
+          "text": "Notification Date: 29 June 2026 Subject: Hostel Policy Decisions and Amendments from AY 2026-27 onwards This is to notify all concerned regarding the following Hostel Policy Decisions from AY 2026-27 : 1. New PhD Scholars Newly admitted from AY 2026-27 PhD scholars will not be accommodated in the University hostel going forward due to non-availability of beds. 2. Existing PhD Scholars  The hostel fee for existing PhD scholars has been revised from Rs.15,000 to Rs.20,000 per month.  The hostel fee will be deducted directly from the monthly stipend paid to the scholar.  Hostel accommodation for existing PhD scholars will be on a triple-sharing basis. 3. Hostel Refund Policy: University's existing Hostel Refund Policy will continue to apply without exception. No pro-rata or partial refunds, and no partial fee payments, will be entertained under any circumstances. Students choosing hostel accommodation must pay the complete annual fee upfront.\nRegistrar's Office"
+        }
+      ],
+      "actual_output_json": {
+        "answer": "The documents do not specify the last date to pay this semester's fees. Please contact the relevant office for this information.",
+        "abstained": false,
+        "sources": [
+          {
+            "document": "Bennett_Hostel_Policy_Amendments_AY2026-27.pdf",
+            "quote": "Notification Date: 29 June 2026 Subject: Hostel Policy Decisions and Amendments from AY 2026-27 onwards This is to notify all concerned regarding the following Hostel Policy Decisions from AY 2026-27 : 1. New PhD Scholars Newly admitted from AY 2026-27 PhD scholars will not be accommodated in the University hostel going forward due to non-availability of beds. 2. Existing PhD Scholars  The hostel fee for existing PhD scholars has been revised from Rs.15,000 to Rs.20,000 per month.  The hostel fee will be deducted directly from the monthly stipend paid to the scholar.  Hostel accommodation for existing PhD scholars will be on a triple-sharing basis. 3. Hostel Refund Policy: University's existing Hostel Refund Policy will continue to apply without exception. No pro-rata or partial refunds, and no partial fee payments, will be entertained under any circumstances. Students choosing hostel",
+            "relevance": 0.717
+          }
+        ],
+        "answer_type": "policy"
+      },
+      "observed_status": "NOT TESTABLE",
+      "assessment": "No current-semester fee notice is indexed. The retriever returned a hostel amendment, and Gemini did not invent a payment date."
+    },
+    {
+      "id": "T5",
+      "input": "What happens if I miss an end-semester exam?",
+      "expected": "SUPPORTED or PARTIAL; cite examination regulations",
+      "type": "Normal",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "T5-C1",
+          "document": "Bennett_Examination_Manual_AY2024-25_Attendance_Section.txt",
+          "score": 0.49,
+          "text": "BENNETT UNIVERSITY — EXAMINATION MANUAL 2024–25 Section 10: Attendance Requirements Official source: https://www.bennett.edu.in/wp-content/uploads/2025/01/Examination-Manual-2024-25-.pdf\nUndergraduate and integrated-program students must have a minimum attendance of 75% in each course during a semester to be eligible to appear for end-semester examinations. Lectures, tutorials, and practical sessions are counted together as applicable. A student with less than 75% attendance in a course is awarded a DB grade in that course, regardless of performance in semester tests. Attendance is counted for the whole semester, and scheduled classes count as one unit regardless of contact hours.\nThe manual says the requirement applies irrespective of medical or other leave. It permits relaxation of up to 10% on specified exceptional grounds, including continuous illness of two weeks supported by a medical certificate, approved university representation, or a special personal reason recommended by the Dean and approved by the Vice Chancellor."
+        }
+      ],
+      "actual_output_json": {
+        "answer": "The provided documents do not specify what happens if you miss an end-semester exam. Please contact the relevant office for this information [Bennett_Examination_Manual_AY2024-25_Attendance_Section.txt].",
+        "abstained": false,
+        "sources": [
+          {
+            "document": "Bennett_Examination_Manual_AY2024-25_Attendance_Section.txt",
+            "quote": "BENNETT UNIVERSITY — EXAMINATION MANUAL 2024–25 Section 10: Attendance Requirements Official source: https://www.bennett.edu.in/wp-content/uploads/2025/01/Examination-Manual-2024-25-.pdf\nUndergraduate and integrated-program students must have a minimum attendance of 75% in each course during a semester to be eligible to appear for end-semester examinations. Lectures, tutorials, and practical sessions are counted together as applicable. A student with less than 75% attendance in a course is awarded a DB grade in that course, regardless of performance in semester tests. Attendance is counted for the whole semester, and scheduled classes count as one unit regardless of contact hours.\nThe manual says the requirement applies irrespective of medical or other leave. It permits relaxation of up to 10% on specified exceptional grounds, including continuous illness of two weeks supported by a medi",
+            "relevance": 0.49
+          }
+        ],
+        "answer_type": "policy"
+      },
+      "observed_status": "FAIL",
+      "assessment": "The retriever returned the attendance-only chunk (score 0.490); answer correctly said missed-exam consequences were not specified, but the expected exam rule is not retrievable."
+    },
+    {
+      "id": "T6",
+      "input": "What are the attendance and hostel rules for medical leave?",
+      "expected": "Combines both policies; cite chunks from two documents",
+      "type": "Edge",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "T6-C1",
+          "document": "Bennett_Examination_Manual_AY2024-25_Attendance_Section.txt",
+          "score": 0.66,
+          "text": "BENNETT UNIVERSITY — EXAMINATION MANUAL 2024–25 Section 10: Attendance Requirements Official source: https://www.bennett.edu.in/wp-content/uploads/2025/01/Examination-Manual-2024-25-.pdf\nUndergraduate and integrated-program students must have a minimum attendance of 75% in each course during a semester to be eligible to appear for end-semester examinations. Lectures, tutorials, and practical sessions are counted together as applicable. A student with less than 75% attendance in a course is awarded a DB grade in that course, regardless of performance in semester tests. Attendance is counted for the whole semester, and scheduled classes count as one unit regardless of contact hours.\nThe manual says the requirement applies irrespective of medical or other leave. It permits relaxation of up to 10% on specified exceptional grounds, including continuous illness of two weeks supported by a medical certificate, approved university representation, or a special personal reason recommended by the Dean and approved by the Vice Chancellor."
+        }
+      ],
+      "actual_output_json": {
+        "answer": "Based on the provided documents, the attendance requirement of a minimum of 75% in each course applies irrespective of medical or other leave [Bennett_Examination_Manual_AY2024-25_Attendance_Section.txt]. However, the manual permits a relaxation of up to 10% on specified exceptional grounds, which include continuous illness of two weeks supported by a medical certificate [Bennett_Examination_Manual_AY2024-25_Attendance_Section.txt]. \n\nThe provided documents do not contain information regarding hostel rules for medical leave. For hostel rules, please contact the relevant office [Bennett_Examination_Manual_AY2024-25_Attendance_Section.txt].",
+        "abstained": false,
+        "sources": [
+          {
+            "document": "Bennett_Examination_Manual_AY2024-25_Attendance_Section.txt",
+            "quote": "BENNETT UNIVERSITY — EXAMINATION MANUAL 2024–25 Section 10: Attendance Requirements Official source: https://www.bennett.edu.in/wp-content/uploads/2025/01/Examination-Manual-2024-25-.pdf\nUndergraduate and integrated-program students must have a minimum attendance of 75% in each course during a semester to be eligible to appear for end-semester examinations. Lectures, tutorials, and practical sessions are counted together as applicable. A student with less than 75% attendance in a course is awarded a DB grade in that course, regardless of performance in semester tests. Attendance is counted for the whole semester, and scheduled classes count as one unit regardless of contact hours.\nThe manual says the requirement applies irrespective of medical or other leave. It permits relaxation of up to 10% on specified exceptional grounds, including continuous illness of two weeks supported by a medi",
+            "relevance": 0.66
+          }
+        ],
+        "answer_type": "policy"
+      },
+      "observed_status": "FAIL",
+      "assessment": "Only the attendance text was retrieved; the answer covered attendance and said hostel medical-leave rules were absent."
+    },
+    {
+      "id": "T7",
+      "input": "What is the deadline?",
+      "expected": "AMBIGUOUS; ask which deadline, no guess",
+      "type": "Edge",
+      "retrieved_chunks": [],
+      "actual_output_json": {
+        "answer": "Many universities set a minimum attendance threshold to determine exam eligibility, and failing to meet this requirement can bar you from sitting for tests. You should check your course handbook or student portal to find the specific attendance rules and deadlines that apply to your program. If you are currently at risk of falling below the required standard, contact your instructor or academic advisor early to discuss any documented absences and potential make-up or condonation processes. Be sure to confirm the exact threshold and associated deadlines with your academic office.",
+        "abstained": false,
+        "sources": [],
+        "answer_type": "general"
+      },
+      "observed_status": "FAIL",
+      "assessment": "No chunk was retrieved; Gemini supplied general attendance guidance instead of asking which deadline was meant."
+    },
+    {
+      "id": "T8",
+      "input": "When is the fee deadline?",
+      "expected": "CONFLICT; show both dates and sources, identify newer source",
+      "type": "Edge",
+      "retrieved_chunks": [],
+      "actual_output_json": {
+        "answer": "Tuition and fee payment deadlines are typically set by the university's finance or bursar's office well before the start of each term or registration period. You can find the exact payment schedule by checking your student portal account summary, the university's official academic calendar, or the financial services page. If you are unable to pay by the stated deadline, you should contact the financial office or your academic advisor immediately to discuss payment plans or potential extensions. Be sure to confirm the exact dates and late-fee policies with the university's finance office.",
+        "abstained": false,
+        "sources": [],
+        "answer_type": "general"
+      },
+      "observed_status": "NOT TESTABLE",
+      "assessment": "The repository does not contain two conflicting fee notices. No chunks were retrieved, and the model gave generic payment guidance rather than comparing dates."
+    }
+  ],
+  "evaluation_summary": {
+    "pass": 1,
+    "fail": 5,
+    "not_testable": 2,
+    "note": "NOT TESTABLE means required current/conflicting source documents were absent from the indexed repository; the captured output is still the actual response produced for the question."
+  }
+}

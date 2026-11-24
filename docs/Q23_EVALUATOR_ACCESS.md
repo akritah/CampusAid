@@ -1,13 +1,20 @@
 # Q23 — Evaluator access handoff
 
-Fill this section after publishing and testing the deployment. Evaluators must not need to request access.
+## Q11 prototype link
 
-- **Public source repository:** https://github.com/akritah/CampusAid (repository visibility verified; current local submission files have not been pushed)
-- **One public app URL:** `PENDING — publish Vercel frontend and verify in an incognito browser`
-- **Colab fallback:** `code/CampusAid_Evaluator_Demo.ipynb` is prepared locally with saved outputs. Publish it to the public repository, then open it in Colab if the full web deployment cannot be completed.
-- **Student evaluator username:** `PENDING — provision a dedicated student account`
-- **Student evaluator password:** `PENDING — provide directly in Q23, not in this repository`
-- **What the evaluator can try:** sign in; ask the attendance question and inspect the cited source; ask a question from another indexed policy; file and track a test grievance; try the voice complaint flow.
-- **Access check:** verify the public URL and login from a signed-out/incognito browser before submission.
+**Open the CampusAid policy Q&A evaluator in Colab:**
+https://colab.research.google.com/github/akritah/CampusAid/blob/codex/campusaid-evaluator/code/CampusAid_Evaluator_Demo.ipynb
 
-Do not commit API keys, passwords, or tokens. Keep the Gemini key in the Render backend environment only. Use `DEMO_USERS_JSON` with a unique 12+ character password to seed a student account; account creation happens only when the username is first absent from the configured database. Set the password in Render and communicate it through the assignment's Q23 response, not a public file.
+The repository and branch are public. A standard Google sign-in may be required to open Colab; no additional access request or project invitation is needed. The notebook displays saved, actual retrieval and Gemini outputs without requiring an API key. To run a new question, execute its setup cell and enter a Gemini API key into the hidden prompt; that key is not saved. The notebook tests policy Q&A only. It does not implement grievance submission/tracking or voice intake.
+
+## Deployment and login status
+
+- **Full public web app:** Not available yet. Render completed the Python 3.11.11 dependency build but the Free instance exceeded its 512 MiB memory limit while loading the sentence-transformer model, before opening a port. The app has not been verified live.
+- **Evaluator app login:** Not applicable to the Colab notebook; it does not use CampusAid authentication.
+- **Student username/password:** Not provided. Do not use a fabricated or default credential.
+- **Source repository:** https://github.com/akritah/CampusAid/tree/codex/campusaid-evaluator
+- **Saved evaluation outputs:** [`test-data/policy_qa_run_2026-11-24.json`](../test-data/policy_qa_run_2026-11-24.json)
+
+The actual evaluation recorded one pass, five failures, and two cases that could not be tested because the required fee notices are absent from the indexed corpus. The notebook exposes these results as recorded and does not present them as a successful full-app deployment.
+
+Do not commit API keys, passwords, or tokens. If the full web app is later deployed, provision a dedicated student account and add its credentials to the assignment response privately, not to this public repository.

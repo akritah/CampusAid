@@ -4,9 +4,9 @@ CampusAid is a student-support prototype for submitting and tracking grievances,
 
 ## Evaluator link
 
-**Live app:** Not published yet. The repository has Vercel and Render deployment configuration; see [Deployment](DEPLOYMENT.md) and [Q23 evaluator access](docs/Q23_EVALUATOR_ACCESS.md). Do not submit a localhost URL as the evaluator link.
+**Live app:** Not published yet. Render's Free instance built the backend on Python 3.11.11 but exceeded its 512 MiB memory limit during sentence-transformer startup. For the milestone evaluator link, open the [CampusAid policy Q&A Colab notebook](https://colab.research.google.com/github/akritah/CampusAid/blob/codex/campusaid-evaluator/code/CampusAid_Evaluator_Demo.ipynb), which includes saved actual outputs and can run new questions with a Gemini API key. See [Q23 evaluator access](docs/Q23_EVALUATOR_ACCESS.md) and [Deployment](DEPLOYMENT.md) for status and limitations.
 
-**Colab fallback:** [Evaluator notebook](code/CampusAid_Evaluator_Demo.ipynb). It includes saved outputs and a hidden prompt for an evaluator-supplied Gemini key when they want to run a new question. Publish the current notebook revision to the public repository before sharing its Colab URL.
+**Colab fallback:** [Evaluator notebook](code/CampusAid_Evaluator_Demo.ipynb). It includes the captured 2026-11-24 policy QA outputs. Running new questions requires an evaluator-supplied Gemini API key, entered through a hidden prompt.
 
 **Repository:** https://github.com/akritah/CampusAid (confirm it is public before submitting).
 

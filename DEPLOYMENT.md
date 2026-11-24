@@ -119,7 +119,7 @@ All signed-in browser requests use a 12-hour bearer token. The UI stores the tok
 5. Submit a test grievance and confirm it appears in that account's history; use an admin account to update status and confirm it is reflected.
 6. Upload one policy file, redeploy the backend, and ask the same question again. A successful answer after redeployment verifies the disk mount and policy path. Check complaints remain after deployment through PostgreSQL.
 
-The deployment is not considered successful until the actual Vercel and Render services pass these checks. This repository has not been deployed by these instructions.
+The deployment is not considered successful until the actual Vercel and Render services pass these checks. A Render build on 2026-11-24 completed with Python 3.11.11, but the Free instance exceeded 512 MiB while loading the sentence-transformer at startup and never opened an HTTP port. The web app is not live; see [`docs/Q23_EVALUATOR_ACCESS.md`](docs/Q23_EVALUATOR_ACCESS.md) for the Colab evaluator fallback. A larger-memory backend instance or a redesign that reduces model memory is required before the full app can be deployed on Render.
 
 ## 9. Local checks and troubleshooting
 
@@ -146,6 +146,7 @@ Common issues:
 - **CORS error:** Render `CORS_ORIGINS` must exactly match the Vercel origin, including `https://` and any custom domain. Do not include a route path or trailing slash.
 - **Frontend network/config error:** verify Vercel `NEXT_PUBLIC_API_URL`, then redeploy/rebuild Vercel.
 - **Render health check fails:** inspect API logs for PostgreSQL URL/network issues, model download failures, or a missing `complaint_classifier.pkl`; check `/health` directly.
+- **Render Free service restarts during startup with out-of-memory notice:** the classifier's sentence-transformer consumes more than the Free instance's 512 MiB limit during startup. The dependency build can succeed while the service still fails before port binding. Use a larger-memory instance or refactor model loading/inference and re-check all grievance-classification features; do not report the service as live based on a successful build alone.
 - **Classifier unavailable:** ensure `backend/models/complaint_classifier.pkl` was committed and `CLASSIFIER_MODEL_PATH` matches it. Do not train from a deployment with missing data; the model is included as a small artifact.
 - **Policy uploads disappear:** verify the disk is attached at `/var/data`, the service uses a disk-capable plan, and `POLICY_STORAGE_DIR=/var/data/policies`.
 - **Policy answers are general rather than cited:** check that `GEMINI_API_KEY` is set on the backend, the relevant document exists in `POLICY_STORAGE_DIR`, and its text is extractable. Scanned-image PDFs without a text layer need OCR before upload; this code does not perform OCR.

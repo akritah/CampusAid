@@ -24,9 +24,11 @@ The attendance response is grounded in Section 10 of Bennett University's Examin
 
 Prompt snapshots in `prompts/v1` through `prompts/v3` document the progression from quote-and-refuse behavior to grounded cited answers plus useful general guidance when no source matches. `prompts/final/policy_qa.md` contains the current answer contract and retrieval safety rules.
 
-## Evaluation
+## Demonstration and testing
 
-The fixed set in `test-data/policy_qa_cases.json` covers attendance, grievance filing, and an unsupported policy topic. On 2026-11-21, manual live checks confirmed that attendance and grievance queries retrieved their expected source documents and returned cited answers. A question without a matching document returned general next-step guidance with no policy citations. The lightweight Gemini model returned a successful API response.
+A live local evaluation was run on 2026-11-24 through `backend/app/policy_qa.py`, using the checked-in indexed corpus and configured Gemini API. The complete prompts, retrieved chunks, and exact CampusAid JSON responses are in `test-data/policy_qa_run_2026-11-24.json`; the summary table and T1 sample are in `test-data/saved_outputs.md`. Results: **1 pass, 5 fail, 2 not testable**. T1 answered the 75% attendance question with the Section 10 source. The failures expose retrieval gaps, a missing clarification behavior, and incomplete combined-policy retrieval. The two non-testable cases need current or conflicting fee notices that are not present in the repository.
+
+The runtime currently builds Gemini instructions inline in `backend/app/policy_qa.py`; it does not load `prompts/v3/policy_qa.md`. This run therefore evaluates the active implementation, not a controlled P1/v3 prompt comparison. Do not claim the v3 snapshot was used until the application loads it.
 
 ## Limitations
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-24 — Evaluator fallback and observed deployment limits
+
+- Recorded a live eight-case policy Q&A run with retrieved chunks and exact API responses. Results: one pass, five failures, and two fee-notice cases not testable because their required sources are absent.
+- Rebuilt the Colab evaluator to display the saved real run and call the application's actual policy retriever/Gemini integration for new questions; removed hand-written answer output from the notebook.
+- Added the public Colab prototype link and clarified that it covers policy Q&A, not grievance submission or voice intake.
+- Recorded that Render's Python 3.11.11 dependency build succeeded but the Free service exceeded 512 MiB while loading the sentence-transformer and did not become live.
+
 ## 2026-11-21 — Milestone 2 preparation
 
 - Added the nine-block Business Model Canvas and a repository-specific technical report.
