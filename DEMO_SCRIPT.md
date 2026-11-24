@@ -19,6 +19,8 @@ npm run dev
 http://localhost:3000
 ```
 
+Create a student/worker account from the signup page or use the dedicated demo credentials provisioned for this deployment. No stock demo passwords are shipped.
+
 ## 📋 Demo Script (25 minutes)
 
 ### Part 1: Introduction (2 min)
@@ -159,7 +161,7 @@ http://localhost:3000
 
 **Steps**:
 1. Click "Logout"
-2. Login with: `admin1` / `admin123`
+2. Sign in with the dedicated administrator account provisioned for this environment.
 3. Select role: `Admin`
 
 **Show Dashboard**:

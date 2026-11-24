@@ -47,6 +47,14 @@ const NAVY = "var(--navy)";
 const RED = "var(--danger)";
 const PIE_COLORS = [NAVY, RED];
 
+const HOSTEL_BREAKDOWN = [
+  { emoji: "🌐", label: "WiFi / Internet", count: 8 },
+  { emoji: "🚿", label: "Plumbing", count: 5 },
+  { emoji: "💡", label: "Electricity", count: 4 },
+  { emoji: "🛋️", label: "Furniture", count: 3 },
+  { emoji: "🧹", label: "Housekeeping", count: null },
+];
+
 export default function AdminPortal() {
   const router = useRouter();
   const [role, setRole] = React.useState<"admin" | "warden" | null>(null);
@@ -320,6 +328,35 @@ export default function AdminPortal() {
                       </div>
                     </div>
 
+                    {role === "warden" && (
+                      <Card>
+                        <CardHeader>
+                          <CardTitle>Hostel Complaint Breakdown</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+                            {HOSTEL_BREAKDOWN.map((item) => (
+                              <div
+                                key={item.label}
+                                className="rounded-[var(--radius-lg)] border p-4"
+                                style={{ borderColor: "var(--border)", background: "var(--card)" }}
+                              >
+                                <div className="flex items-center justify-between gap-3">
+                                  <p className="text-2xl">{item.emoji}</p>
+                                  <p className="text-2xl font-bold" style={{ color: "var(--navy)" }}>
+                                    {item.count ?? "—"}
+                                  </p>
+                                </div>
+                                <p className="mt-3 text-sm font-semibold" style={{ color: "var(--slate)" }}>
+                                  {item.label}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+
                     <div className="grid gap-4 xl:grid-cols-2">
                       <Card>
                         <CardHeader>
@@ -461,6 +498,35 @@ export default function AdminPortal() {
                 )}
               </CardContent>
             </Card>
+
+            {role === "warden" && selectedDepartment === "Hostel" && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Hostel Complaint Breakdown</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+                    {HOSTEL_BREAKDOWN.map((item) => (
+                      <div
+                        key={item.label}
+                        className="rounded-[var(--radius-lg)] border p-4"
+                        style={{ borderColor: "var(--border)", background: "var(--card)" }}
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <p className="text-2xl">{item.emoji}</p>
+                          <p className="text-2xl font-bold" style={{ color: "var(--navy)" }}>
+                            {item.count ?? "—"}
+                          </p>
+                        </div>
+                        <p className="mt-3 text-sm font-semibold" style={{ color: "var(--slate)" }}>
+                          {item.label}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         )}
       </main>

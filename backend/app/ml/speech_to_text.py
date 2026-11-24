@@ -12,8 +12,15 @@ We use Whisper (OpenAI's open-source model) which can run locally.
 """
 
 import os
+import threading
 from typing import Optional
 import tempfile
+
+try:
+    from faster_whisper import WhisperModel as FasterWhisperModel
+    FASTER_WHISPER_AVAILABLE = True
+except ImportError:
+    FASTER_WHISPER_AVAILABLE = False
 
 # Option 1: Local Whisper (FREE - No API key needed)
 # Uncomment this if you want to run Whisper locally
@@ -55,6 +62,16 @@ class SpeechToText:
                     Get it from: https://platform.openai.com/api-keys
         """
         self.use_api = use_api
+        self.model_name = os.getenv("WHISPER_MODEL", "small").strip() or "small"
+        self.use_faster_whisper = os.getenv("USE_FASTER_WHISPER", "true").strip().lower() in {
+            "1", "true", "yes", "on"
+        }
+        self.decode_preset = os.getenv("WHISPER_DECODE_PRESET", "balanced").strip().lower() or "balanced"
+        # Prompt helps preserve frequent domain words in transcriptions.
+        self.initial_prompt = (
+            "Campus complaint from a student. Common words: hostel, warden, mess, wifi, "
+            "library, classroom, administration, harassment, maintenance."
+        )
         
         if use_api:
             if not OPENAI_API_AVAILABLE:
@@ -64,16 +81,36 @@ class SpeechToText:
             self.client = OpenAI(api_key=api_key)
             print("✅ Using OpenAI Whisper API (cloud-based)")
         else:
-            if not WHISPER_LOCAL_AVAILABLE:
+            faster_whisper_selected = self.use_faster_whisper and FASTER_WHISPER_AVAILABLE
+            if not WHISPER_LOCAL_AVAILABLE and not faster_whisper_selected:
                 raise ImportError(
-                    "Local Whisper not installed. Run: pip install openai-whisper\n"
+                    "No local speech engine is installed. Install faster-whisper or openai-whisper.\n"
                     "Or set use_api=True to use OpenAI API"
                 )
-            # Load the model (base model is good balance of speed and accuracy)
-            # Models: tiny, base, small, medium, large
-            # For college project, 'base' is recommended
-            self.model = whisper.load_model("base")
-            print("✅ Using Local Whisper (free, no API key needed)")
+
+            self.model = None
+            self.faster_model = None
+            self._model_load_lock = threading.Lock()
+
+            # Load the large speech model only when a voice complaint arrives.
+            # This keeps ordinary API startup and health checks lightweight.
+
+    def _ensure_local_model(self) -> None:
+        if self.faster_model is not None or self.model is not None:
+            return
+        with self._model_load_lock:
+            if self.faster_model is not None or self.model is not None:
+                return
+            if self.use_faster_whisper and FASTER_WHISPER_AVAILABLE:
+                self.faster_model = FasterWhisperModel(
+                    self.model_name,
+                    device="cpu",
+                    compute_type="int8",
+                )
+                print(f"✅ Using Faster-Whisper model: {self.model_name} (cpu/int8)")
+            else:
+                self.model = whisper.load_model(self.model_name)
+                print(f"✅ Using Local Whisper model: {self.model_name} (free, no API key needed)")
     
     def transcribe(self, audio_file_path: str, language: Optional[str] = None) -> dict:
         """
@@ -97,22 +134,74 @@ class SpeechToText:
             "Hostel mein hot water nahi aa raha hai"
         """
         
+        normalized_language = self._normalize_language_hint(language)
+
         if self.use_api:
-            return self._transcribe_api(audio_file_path, language)
+            return self._transcribe_api(audio_file_path, normalized_language)
         else:
-            return self._transcribe_local(audio_file_path, language)
+            return self._transcribe_local(audio_file_path, normalized_language)
+
+    def _normalize_language_hint(self, language: Optional[str]) -> Optional[str]:
+        if language is None:
+            return None
+
+        normalized = language.strip().lower()
+        if not normalized:
+            return None
+
+        alias_map = {
+            "en": "en",
+            "english": "en",
+            "hi": "hi",
+            "hindi": "hi",
+            # Hinglish is mixed language, so auto-detection usually works better.
+            "hinglish": None,
+            "auto": None,
+        }
+        return alias_map.get(normalized)
     
     def _transcribe_local(self, audio_file_path: str, language: Optional[str]) -> dict:
         """
         Transcribe using local Whisper model.
         This runs on your computer - no internet needed!
         """
-        # Transcribe the audio
-        # Whisper automatically handles Hindi, English, and Hinglish
+        preset = self.decode_preset if self.decode_preset in {"fast", "balanced", "accurate"} else "balanced"
+        self._ensure_local_model()
+
+        if self.faster_model is not None:
+            beam_size = {"fast": 2, "balanced": 4, "accurate": 6}[preset]
+            vad_filter = preset != "accurate"
+            segments, info = self.faster_model.transcribe(
+                audio_file_path,
+                language=language,
+                task="transcribe",
+                beam_size=beam_size,
+                condition_on_previous_text=True,
+                vad_filter=vad_filter,
+                initial_prompt=self.initial_prompt,
+            )
+            text = " ".join(segment.text.strip() for segment in segments).strip()
+
+            return {
+                "text": text,
+                "language": getattr(info, "language", "unknown") or "unknown",
+                "confidence": None,
+                "method": "faster-whisper",
+            }
+
+        # Fallback path: openai-whisper
+        best_of = {"fast": 2, "balanced": 3, "accurate": 5}[preset]
+        beam_size = {"fast": 2, "balanced": 3, "accurate": 5}[preset]
         result = self.model.transcribe(
             audio_file_path,
-            language=language,  # None = auto-detect
-            task="transcribe"   # 'transcribe' keeps original language
+            language=language,
+            task="transcribe",
+            fp16=False,
+            temperature=0,
+            best_of=best_of,
+            beam_size=beam_size,
+            condition_on_previous_text=True,
+            initial_prompt=self.initial_prompt,
         )
         
         return {
@@ -142,7 +231,12 @@ class SpeechToText:
             "method": "api"
         }
     
-    def transcribe_from_bytes(self, audio_bytes: bytes, filename: str = "audio.mp3") -> dict:
+    def transcribe_from_bytes(
+        self,
+        audio_bytes: bytes,
+        filename: str = "audio.mp3",
+        language: Optional[str] = None,
+    ) -> dict:
         """
         Transcribe audio from bytes (useful for uploaded files).
         
@@ -160,7 +254,7 @@ class SpeechToText:
         
         try:
             # Transcribe the temporary file
-            result = self.transcribe(tmp_path)
+            result = self.transcribe(tmp_path, language=language)
             return result
         finally:
             # Clean up temporary file

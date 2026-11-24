@@ -3,11 +3,16 @@ Test script to verify all CampusAid backend endpoints.
 Run this after starting the backend server.
 """
 
+import os
+import secrets
+import uuid
 import requests
 import json
 from typing import Dict, Any
 
-BASE_URL = "http://localhost:8000"
+BASE_URL = os.getenv("TEST_API_URL", "http://127.0.0.1:8000").rstrip("/")
+AUTH_HEADERS: Dict[str, str] = {}
+ADMIN_HEADERS: Dict[str, str] = {}
 
 def print_section(title: str):
     print("\n" + "=" * 70)
@@ -44,13 +49,15 @@ def test_auth_flow():
     # Test registration
     try:
         register_data = {
-            "username": f"testuser_{int(requests.get(f'{BASE_URL}/').json().get('statistics', {}).get('total_complaints', 0))}",
-            "password": "testpass123",
+            "username": f"test_{uuid.uuid4().hex[:12]}",
+            "password": secrets.token_urlsafe(18),
             "role": "student"
         }
         response = requests.post(f"{BASE_URL}/auth/register", json=register_data)
         success = response.status_code == 200
         data = response.json() if success else {}
+        if success:
+            AUTH_HEADERS.update({"Authorization": f"Bearer {data['access_token']}"})
         print_result("User registration", success, 
                     f"User ID: {data.get('user_id', 'N/A')}, Role: {data.get('role', 'N/A')}")
         
@@ -85,7 +92,7 @@ def test_complaint_submission():
             "student_id": "E12345",
             "contact": "test@example.com"
         }
-        response = requests.post(f"{BASE_URL}/submit-complaint", json=complaint_data)
+        response = requests.post(f"{BASE_URL}/submit-complaint", json=complaint_data, headers=AUTH_HEADERS)
         success = response.status_code == 200
         data = response.json() if success else {}
         print_result("Text complaint submission", success,
@@ -95,7 +102,7 @@ def test_complaint_submission():
             complaint_id = data.get('complaint_id')
             
             # Test get complaint by ID
-            response = requests.get(f"{BASE_URL}/complaints/{complaint_id}")
+            response = requests.get(f"{BASE_URL}/complaints/{complaint_id}", headers=AUTH_HEADERS)
             success = response.status_code == 200
             print_result("Get complaint by ID", success, f"Retrieved complaint #{complaint_id}")
             
@@ -113,21 +120,21 @@ def test_complaint_listing():
     
     try:
         # Test list all complaints
-        response = requests.get(f"{BASE_URL}/complaints")
+        response = requests.get(f"{BASE_URL}/complaints", headers=AUTH_HEADERS)
         success = response.status_code == 200
         data = response.json() if success else {}
         print_result("List all complaints", success,
                     f"Total: {data.get('total', 0)} complaints")
         
         # Test filter by department
-        response = requests.get(f"{BASE_URL}/complaints?department=Hostel")
+        response = requests.get(f"{BASE_URL}/complaints?department=Hostel", headers=AUTH_HEADERS)
         success = response.status_code == 200
         data = response.json() if success else {}
         print_result("Filter by department", success,
                     f"Hostel complaints: {data.get('total', 0)}")
         
         # Test filter by status
-        response = requests.get(f"{BASE_URL}/complaints?status=auto_routed")
+        response = requests.get(f"{BASE_URL}/complaints?status=auto_routed", headers=AUTH_HEADERS)
         success = response.status_code == 200
         data = response.json() if success else {}
         print_result("Filter by status", success,
@@ -143,25 +150,30 @@ def test_admin_endpoints():
     print_section("5. ADMIN ENDPOINTS (Demo User)")
     
     try:
-        # Login as admin
+        username = os.getenv("TEST_ADMIN_USERNAME", "").strip()
+        password = os.getenv("TEST_ADMIN_PASSWORD", "")
+        if not username or not password:
+            print_result("Admin stats (optional)", True, "Skipped; set TEST_ADMIN_USERNAME and TEST_ADMIN_PASSWORD to exercise it")
+            return True
+
         login_data = {
-            "username": "admin1",
-            "password": "admin123"
+            "username": username,
+            "password": password
         }
         response = requests.post(f"{BASE_URL}/auth/login", json=login_data)
         success = response.status_code == 200
+        data = response.json() if success else {}
+        if success:
+            ADMIN_HEADERS.update({"Authorization": f"Bearer {data['access_token']}"})
         print_result("Admin login", success)
         
         if not success:
             print("   Skipping admin tests - login failed")
             return False
         
-        # Note: In a real implementation, we would need to pass auth tokens
-        # For now, we test the endpoint without auth
-        response = requests.get(f"{BASE_URL}/admin/stats")
-        # This will fail without proper auth, but we can check if endpoint exists
+        response = requests.get(f"{BASE_URL}/admin/stats", headers=ADMIN_HEADERS)
         print_result("Admin stats endpoint", 
-                    response.status_code in [200, 401, 403],
+                    response.status_code == 200,
                     f"Status: {response.status_code}")
         
         return True
@@ -174,7 +186,7 @@ def test_categories():
     print_section("6. COMPLAINT CATEGORIES")
     
     try:
-        response = requests.get(f"{BASE_URL}/complaints/meta/categories")
+        response = requests.get(f"{BASE_URL}/complaints/meta/categories", headers=AUTH_HEADERS)
         success = response.status_code == 200
         data = response.json() if success else {}
         print_result("Get categories", success,

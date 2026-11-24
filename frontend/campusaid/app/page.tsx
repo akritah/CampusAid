@@ -57,15 +57,15 @@ export default function LandingPage() {
 
   return (
     <AuthContainer>
-      <div className="grid gap-8 lg:grid-cols-[1.45fr_1fr] lg:items-start">
+      <div className="auth-landing-grid">
         <section>
           <p className="section-label">Access Control</p>
-          <h2 className="page-title">Select Your Role</h2>
-          <p className="page-subtitle">
+          <h2 className="auth-role-title">Select Your Role</h2>
+          <p className="auth-role-subtitle">
             Choose your role to continue. Access is validated only by backend-authenticated role.
           </p>
 
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="auth-role-grid">
             {roleCards.map((card) => (
               <RoleSelectionCard
                 key={card.role}
@@ -80,7 +80,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="lg:sticky lg:top-8">
+        <section className="auth-login-column lg:sticky lg:top-8">
           <LoginForm
             selectedRole={selectedRole}
           />

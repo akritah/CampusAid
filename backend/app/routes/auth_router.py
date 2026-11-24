@@ -1,7 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.auth import authenticate_user, get_password_hash
+import os
+
+from app.auth import authenticate_user, create_access_token, get_password_hash
 from app.database import get_db
 from app.models import User, UserRole
 from app.schemas import AuthLoginRequest, AuthLoginResponse, AuthRegisterRequest, AuthRegisterResponse
@@ -25,11 +27,14 @@ async def register_user(payload: AuthRegisterRequest, db: Session = Depends(get_
             detail="Username already exists",
         )
 
-    if payload.role not in {UserRole.STUDENT, UserRole.WORKER, UserRole.ADMIN, UserRole.WARDEN}:
+    allowed_roles = {UserRole.STUDENT, UserRole.WORKER}
+    if os.getenv("ALLOW_STAFF_REGISTRATION", "false").lower() in {"1", "true", "yes"}:
+        allowed_roles |= {UserRole.ADMIN, UserRole.WARDEN}
+    if payload.role not in allowed_roles:
         logger.warning(f"Registration failed: Invalid role {payload.role}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid role. Allowed: student, worker, admin, warden",
+            detail="Public registration is available for student and worker accounts only",
         )
 
     user = User(
@@ -76,4 +81,6 @@ async def login(payload: AuthLoginRequest, db: Session = Depends(get_db)):
         "user_id": user.id,
         "username": user.username,
         "role": user.role,
+        "access_token": create_access_token(user),
+        "token_type": "bearer",
     }

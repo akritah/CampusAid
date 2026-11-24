@@ -9,6 +9,7 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
     return (
       <textarea
         ref={ref}
+        suppressHydrationWarning
         className={cn(
           "input-field",
           className

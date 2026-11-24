@@ -1,0 +1,20 @@
+[
+  {
+    "id": "attendance_75_percent",
+    "question": "What is the attendance criteria to appear in exams at Bennett?",
+    "expected": "State the 75% minimum per course for undergraduate and integrated-program students, explain the consequence and any manual-specified relaxation, and cite the examination manual attendance section.",
+    "expected_sources": ["Bennett_Examination_Manual_AY2024-25_Attendance_Section.txt"]
+  },
+  {
+    "id": "grievance_submission",
+    "question": "How do I file a grievance?",
+    "expected": "Explain the online/offline submission routes and formal written grievance requirements from the retrieved source.",
+    "expected_sources": ["Bennett_Grievance_Redressal_Policy.pdf"]
+  },
+  {
+    "id": "unsupported_general_guidance",
+    "question": "What should I do if my student ID card is lost?",
+    "expected": "Give practical general guidance, make no unsupported Bennett-specific claims, and mark the answer as general with no policy citation.",
+    "expected_sources": []
+  }
+]

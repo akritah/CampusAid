@@ -4,25 +4,23 @@ CampusAid FastAPI application entrypoint.
 
 import logging
 import os
+import json
 from typing import Optional
 
-from fastapi import FastAPI, Depends, File, Request, UploadFile, HTTPException, status
+from fastapi import FastAPI, Depends, File, Form, Request, UploadFile, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import func
+from sqlalchemy import func, text
 from sqlalchemy.orm import Session
 
-from app.auth import get_password_hash
-from app.auth import get_current_user
+from app.auth import get_password_hash, get_current_user, validate_auth_settings
 from app.database import SessionLocal, get_db, get_database_info, init_db
-from app.ml.complaint_classifier import ComplaintClassifier
-from app.ml.multilingual_embedder import MultilingualEmbedder
-from app.ml.speech_to_text import SpeechToText
 from app.models import Complaint, ComplaintStatus, User, UserRole
 from app.schemas import ComplaintCreateRequest, ComplaintSubmitResponse
 from app.routes.admin_router import router as admin_router
 from app.routes.auth_router import router as auth_router
 from app.routes.complaints_router import router as complaints_router
-from app.routes.complaints_router import submit_text_complaint, submit_voice_complaint
+from app.routes.complaints_router import submit_text_complaint, transcribe_voice_complaint
+from app.routes.policy_router import router as policy_router
 
 # Configure logging
 logging.basicConfig(
@@ -36,18 +34,18 @@ app = FastAPI(
     title="CampusAid - Complaint Management System with Database",
     description="Multilingual complaint classification system with persistent storage",
     version="3.0.0",
+    docs_url="/docs" if os.getenv("APP_ENV", "development").lower() != "production" else None,
+    redoc_url=None,
+    openapi_url="/openapi.json" if os.getenv("APP_ENV", "development").lower() != "production" else None,
 )
+
+cors_origins = [origin.strip().rstrip("/") for origin in os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",") if origin.strip()]
+if os.getenv("APP_ENV", "development").lower() == "production" and not cors_origins:
+    raise RuntimeError("CORS_ORIGINS must include the deployed frontend origin in production")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "http://localhost:3001",
-        "http://127.0.0.1:3001",
-        "http://localhost:3002",
-        "http://127.0.0.1:3002",
-    ],
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -55,12 +53,27 @@ app.add_middleware(
 
 
 def seed_demo_users() -> None:
-    demo_users = [
-        {"username": "student1", "password": "student123", "role": UserRole.STUDENT},
-        {"username": "worker1", "password": "worker123", "role": UserRole.WORKER},
-        {"username": "admin1", "password": "admin123", "role": UserRole.ADMIN},
-        {"username": "warden1", "password": "warden123", "role": UserRole.WARDEN},
-    ]
+    raw_users = os.getenv("DEMO_USERS_JSON", "").strip()
+    if not raw_users:
+        logger.info("DEMO_USERS_JSON is unset; skipping demo account seeding")
+        return
+
+    try:
+        configured_users = json.loads(raw_users)
+        if not isinstance(configured_users, list):
+            raise ValueError("DEMO_USERS_JSON must be a JSON array")
+        demo_users = [
+            {
+                "username": str(item["username"]).strip(),
+                "password": str(item["password"]),
+                "role": UserRole(str(item["role"]).lower()),
+            }
+            for item in configured_users
+        ]
+        if any(not item["username"] or len(item["password"]) < 12 for item in demo_users):
+            raise ValueError("Demo usernames must be non-empty and passwords at least 12 characters")
+    except (ValueError, TypeError, KeyError, json.JSONDecodeError) as exc:
+        raise RuntimeError(f"Invalid DEMO_USERS_JSON configuration: {exc}") from exc
 
     db = SessionLocal()
     created_users: list[str] = []
@@ -82,9 +95,7 @@ def seed_demo_users() -> None:
 
         if created_users:
             db.commit()
-            print(f"✅ Demo users created: {', '.join(created_users)}")
-        else:
-            print("ℹ️ Demo users already exist, skipping seeding")
+            logger.info("Configured demo accounts created: %s", ", ".join(created_users))
     except Exception as exc:
         db.rollback()
         print(f"⚠️ Demo user seeding failed: {exc}")
@@ -94,6 +105,7 @@ def seed_demo_users() -> None:
 
 @app.on_event("startup")
 async def startup_event():
+    validate_auth_settings()
     print("\n" + "=" * 70)
     print("🚀 STARTING CAMPUSAID SERVER")
     print("=" * 70)
@@ -109,8 +121,14 @@ async def startup_event():
     print(f"   Database Location: {db_info['url']}")
 
     print("\n🚀 Loading ML models...")
+    # Import model libraries only after the API process starts; module import is
+    # also used by migrations and lightweight API smoke tests.
+    from app.ml.complaint_classifier import ComplaintClassifier
+    from app.ml.multilingual_embedder import MultilingualEmbedder
+    from app.ml.speech_to_text import SpeechToText
+
     backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    model_path = os.path.join(backend_dir, "models", "complaint_classifier.pkl")
+    model_path = os.getenv("CLASSIFIER_MODEL_PATH", os.path.join(backend_dir, "models", "complaint_classifier.pkl"))
 
     embedder = MultilingualEmbedder()
     classifier = ComplaintClassifier(embedder=embedder)
@@ -174,8 +192,15 @@ async def health_check(db: Session = Depends(get_db)):
 
 
 @app.get("/health", tags=["Health"])
-async def service_health():
-    return {"status": "running"}
+async def service_health(db: Session = Depends(get_db)):
+    try:
+        db.execute(text("SELECT 1"))
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail="Database unavailable") from exc
+    classifier_loaded = hasattr(app.state, "classifier") and app.state.classifier.classifier is not None
+    if not classifier_loaded:
+        raise HTTPException(status_code=503, detail="Complaint classifier unavailable")
+    return {"status": "healthy", "database": "connected", "classifier": "ready"}
 
 
 @app.get("/stats", tags=["Admin"])
@@ -280,39 +305,33 @@ async def get_stats(
 async def submit_complaint_alias(
     payload: ComplaintCreateRequest,
     request: Request,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    return await submit_text_complaint(payload=payload, request=request, db=db)
+    return await submit_text_complaint(payload=payload, request=request, current_user=current_user, db=db)
 
 
-@app.post("/voice-complaint", response_model=ComplaintSubmitResponse, tags=["Complaints"])
+@app.post("/voice-complaint", tags=["Complaints"])
 async def submit_voice_complaint_alias(
     request: Request,
+    current_user: User = Depends(get_current_user),
     audio_file: UploadFile = File(...),
-    student_id: Optional[str] = None,
-    db: Session = Depends(get_db),
+    language: Optional[str] = Form(default=None),
 ):
-    return await submit_voice_complaint(
+    return await transcribe_voice_complaint(
         request=request,
+        current_user=current_user,
         audio_file=audio_file,
-        student_id=student_id,
-        db=db,
+        language=language,
     )
 
 
 app.include_router(complaints_router)
 app.include_router(admin_router)
 app.include_router(auth_router, prefix="/auth", tags=["auth"])
+app.include_router(policy_router)
 
 
 if __name__ == "__main__":
     import uvicorn
-
-    print("\n" + "=" * 70)
-    print("STARTING CAMPUSAID BACKEND SERVER")
-    print("=" * 70)
-    print("Server will be available at: http://localhost:8000")
-    print("API documentation: http://localhost:8000/docs")
-    print("=" * 70 + "\n")
-
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", "8000")))

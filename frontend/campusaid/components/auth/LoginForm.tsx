@@ -11,7 +11,6 @@ import {
   getApiBaseUrl,
   normalizeRole,
   saveAuthSession,
-  setBasicAuthCredentials,
   type UserRole
 } from "../../lib/auth";
 
@@ -26,15 +25,14 @@ export function LoginForm({ selectedRole }: LoginFormProps) {
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
-  const isDisabled = loading || !username.trim() || !password.trim() || !selectedRole;
-
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    
-    if (!username.trim() || !password.trim()) {
-      return;
+  React.useEffect(() => {
+    if (window.sessionStorage.getItem("campusaid_session_expired") === "1") {
+      window.sessionStorage.removeItem("campusaid_session_expired");
+      setError("Your session expired. Please sign in again.");
     }
+  }, []);
 
+  const handleLogin = async (loginUsername: string, loginPassword: string, targetRole?: UserRole) => {
     setLoading(true);
     setError(null);
 
@@ -45,8 +43,8 @@ export function LoginForm({ selectedRole }: LoginFormProps) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          username: username.trim(),
-          password: password,
+          username: loginUsername.trim(),
+          password: loginPassword,
         }),
       });
 
@@ -54,20 +52,20 @@ export function LoginForm({ selectedRole }: LoginFormProps) {
 
       if (response.ok && data.success) {
         const normalizedRole = normalizeRole(data.role);
-        console.log("Login successful:", { ...data, normalizedRole });
+        console.info("Login successful for role:", normalizedRole);
 
         if (!normalizedRole) {
           setError("Invalid role returned by server.");
           return;
         }
 
-        saveAuthSession({ ...data, role: normalizedRole });
-        setBasicAuthCredentials(username.trim(), password);
-
-        if (selectedRole && selectedRole !== normalizedRole) {
-          setError(`Selected role (${selectedRole}) does not match account role (${normalizedRole}).`);
+        const expectedRole = targetRole || selectedRole;
+        if (expectedRole && expectedRole !== normalizedRole) {
+          setError(`Selected role (${expectedRole}) does not match account role (${normalizedRole}).`);
           return;
         }
+
+        saveAuthSession({ ...data, role: normalizedRole });
 
         // Role-based navigation
         if (normalizedRole === "admin" || normalizedRole === "warden") {
@@ -88,25 +86,36 @@ export function LoginForm({ selectedRole }: LoginFormProps) {
     }
   };
 
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+
+    if (!username.trim() || !password.trim()) {
+      return;
+    }
+
+    await handleLogin(username, password);
+  };
+
   return (
     <Card
       className={[
+        "login-card",
         "fade-in-up",
         selectedRole ? "opacity-100 translate-y-0" : "opacity-90 translate-y-1"
       ].join(" ")}
     >
-      <CardHeader>
+      <CardHeader className="login-card-header">
         <div>
           <p className="section-label">Authentication</p>
-          <CardTitle className="auth-form-title">Secure Login</CardTitle>
+          <CardTitle className="auth-card-title">Secure Login</CardTitle>
         </div>
-        <p className="auth-form-subtitle !mb-0">
+        <p className="auth-card-subtitle !mb-0">
           {selectedRole
             ? `Selected role: ${selectedRole}. Login to continue.`
-            : "Select a role card to unlock login."}
+            : "Select your account role, then enter your credentials."}
         </p>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-6">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="input-group">
             <Label htmlFor="username">Username</Label>
@@ -145,8 +154,8 @@ export function LoginForm({ selectedRole }: LoginFormProps) {
             type="submit"
             aria-label="Login"
             data-testid="login-button"
-            disabled={isDisabled}
-            className="btn btn-primary w-full"
+            disabled={loading || !username.trim() || !password.trim()}
+            className="btn btn-primary login-submit-btn w-full"
           >
             {loading ? (
               <span className="inline-flex items-center gap-2">

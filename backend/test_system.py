@@ -121,10 +121,13 @@ def test_api_imports():
         print("✅ FastAPI app imports successfully")
         
         # Check if model path is correct
-        from app.main import MODEL_PATH
-        print(f"✅ Model path configured: {MODEL_PATH}")
+        model_path = os.getenv(
+            "CLASSIFIER_MODEL_PATH",
+            os.path.join(SCRIPT_DIR, "models", "complaint_classifier.pkl"),
+        )
+        print(f"✅ Model path configured: {model_path}")
         
-        if os.path.exists(MODEL_PATH):
+        if os.path.exists(model_path):
             print(f"✅ Model file exists")
         else:
             print(f"⚠️ Model file not found (run training first)")

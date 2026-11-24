@@ -6,16 +6,21 @@ type LoginResponse = {
   user_id: number;
   username: string;
   role: UserRole;
+  access_token: string;
 };
 
 const ROLE_KEY = "campusaid_role";
 const USER_ID_KEY = "campusaid_user_id";
 const USERNAME_KEY = "campusaid_username";
-const BASIC_AUTH_KEY = "campusaid_basic_auth";
+const ACCESS_TOKEN_KEY = "campusaid_access_token";
 const SESSION_EXPIRED_MESSAGE = "SESSION_EXPIRED";
 
 export function getApiBaseUrl(): string {
-  return process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+  const value = process.env.NEXT_PUBLIC_API_URL?.trim().replace(/\/+$/, "");
+  if (!value) {
+    throw new Error("NEXT_PUBLIC_API_URL must be configured for the frontend deployment");
+  }
+  return value;
 }
 
 export function normalizeRole(role: string | null | undefined): UserRole | null {
@@ -36,15 +41,6 @@ export function normalizeRole(role: string | null | undefined): UserRole | null 
   return null;
 }
 
-export function setBasicAuthCredentials(username: string, password: string): void {
-  const token = window.btoa(`${username}:${password}`);
-  window.localStorage.setItem(BASIC_AUTH_KEY, token);
-}
-
-export function getBasicAuthToken(): string | null {
-  return window.localStorage.getItem(BASIC_AUTH_KEY);
-}
-
 export function saveAuthSession(login: LoginResponse): void {
   const normalizedRole = normalizeRole(login.role);
   if (!normalizedRole) {
@@ -54,21 +50,25 @@ export function saveAuthSession(login: LoginResponse): void {
   window.localStorage.setItem(ROLE_KEY, normalizedRole);
   window.localStorage.setItem(USER_ID_KEY, String(login.user_id));
   window.localStorage.setItem(USERNAME_KEY, login.username);
+  window.localStorage.setItem(ACCESS_TOKEN_KEY, login.access_token);
 }
 
 export function clearAuthSession(): void {
   window.localStorage.removeItem(ROLE_KEY);
   window.localStorage.removeItem(USER_ID_KEY);
   window.localStorage.removeItem(USERNAME_KEY);
-  window.localStorage.removeItem(BASIC_AUTH_KEY);
+  window.localStorage.removeItem(ACCESS_TOKEN_KEY);
+  window.localStorage.removeItem("campusaid_basic_auth");
 }
 
 export function getAuthSession() {
   const role = normalizeRole(window.localStorage.getItem(ROLE_KEY));
   const userIdRaw = window.localStorage.getItem(USER_ID_KEY);
   const username = window.localStorage.getItem(USERNAME_KEY);
+  const accessToken = window.localStorage.getItem(ACCESS_TOKEN_KEY);
 
-  if (!role || !userIdRaw || !username) {
+  if (!role || !userIdRaw || !username || !accessToken) {
+    clearAuthSession();
     return null;
   }
 
@@ -99,7 +99,6 @@ export async function loginWithPassword(username: string, password: string): Pro
 
   const login = (await response.json()) as LoginResponse;
   saveAuthSession(login);
-  setBasicAuthCredentials(username, password);
 
   const normalizedRole = normalizeRole(login.role);
   if (!normalizedRole) {
@@ -112,20 +111,22 @@ export async function loginWithPassword(username: string, password: string): Pro
 export function getAuthHeaders(requireAuth = true): HeadersInit {
   const session = getAuthSession();
   if (!session && requireAuth) {
+    clearAuthSession();
     throw new Error(SESSION_EXPIRED_MESSAGE);
   }
 
-  const basicToken = getBasicAuthToken();
-  if (requireAuth && !basicToken) {
+  const accessToken = window.localStorage.getItem(ACCESS_TOKEN_KEY);
+  if (requireAuth && !accessToken) {
+    clearAuthSession();
     throw new Error(SESSION_EXPIRED_MESSAGE);
   }
 
-  if (!basicToken) {
+  if (!accessToken) {
     return {};
   }
 
   return {
-    Authorization: `Basic ${basicToken}`,
+    Authorization: `Bearer ${accessToken}`,
   };
 }
 
@@ -143,6 +144,10 @@ export async function apiFetch(path: string, init: RequestInit = {}, requireAuth
 
   if (response.status === 401) {
     clearAuthSession();
+    if (typeof window !== "undefined" && window.location.pathname !== "/") {
+      window.sessionStorage.setItem("campusaid_session_expired", "1");
+      window.location.replace("/");
+    }
     throw new Error(SESSION_EXPIRED_MESSAGE);
   }
 

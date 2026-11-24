@@ -35,8 +35,8 @@ export default function SignupPage() {
       return;
     }
 
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters");
+    if (password.length < 12) {
+      setError("Password must be at least 12 characters");
       return;
     }
 
@@ -80,12 +80,12 @@ export default function SignupPage() {
     <AuthContainer>
       <div className="mx-auto max-w-md">
         <Card>
-          <CardHeader>
+          <CardHeader className="login-card-header">
             <div>
               <p className="section-label">Registration</p>
-              <CardTitle className="auth-form-title">Create Account</CardTitle>
+              <CardTitle className="auth-card-title">Create Account</CardTitle>
             </div>
-            <p className="auth-form-subtitle !mb-0">
+            <p className="auth-card-subtitle !mb-0">
               Register to access the CampusAid portal
             </p>
           </CardHeader>
@@ -113,8 +113,6 @@ export default function SignupPage() {
                 >
                   <option value="student">Student</option>
                   <option value="worker">Worker</option>
-                  <option value="admin">Admin</option>
-                  <option value="warden">Warden</option>
                 </Select>
               </div>
 
@@ -125,7 +123,7 @@ export default function SignupPage() {
                   type="password"
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
-                  placeholder="At least 6 characters"
+                  placeholder="At least 12 characters"
                   autoComplete="new-password"
                   required
                 />

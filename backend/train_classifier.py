@@ -32,9 +32,9 @@ def load_training_data(csv_path: str = None):
     Load training data from CSV file.
     
     Expected CSV format:
-    id,text,language,category,source
-    1,"Hot water not available",en,Hostel,manual
-    2,"WiFi nahi working",hi-en,IT,manual
+    id,text,language,category,source,priority (priority optional)
+    1,"Hot water not available",en,Hostel,manual,medium
+    2,"WiFi nahi working",hi-en,IT,manual,high
     ...
     
     Args:
@@ -57,6 +57,10 @@ def load_training_data(csv_path: str = None):
     print(f"   ✓ Categories: {df['category'].nunique()}")
     print(f"   ✓ Category distribution:")
     print(df['category'].value_counts().to_string())
+
+    if "priority" in df.columns:
+        print("   ✓ Priority distribution:")
+        print(df["priority"].value_counts().to_string())
     
     # Extract texts and labels
     texts = df['text'].tolist()
