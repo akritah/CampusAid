@@ -1,0 +1,14 @@
+[
+  {"id":"R1","question":"What attendance percentage is required in each course for end semester exams?","expected_source":"Bennett_Examination_Manual_AY2024-25_Attendance_Section.txt","evidence":["75%","end-semester examinations"]},
+  {"id":"R2","question":"Can medical leave reduce attendance below the required percentage?","expected_source":"Bennett_Examination_Manual_AY2024-25_Attendance_Section.txt","evidence":["irrespective of medical or other leave","relaxation of up to 10%"]},
+  {"id":"R3","question":"How many days does the Level I grievance authority have to begin redressal?","expected_source":"Bennett_Grievance_Redressal_Policy.pdf","evidence":["within two working days","receipt"]},
+  {"id":"R4","question":"How can a student submit a grievance online?","expected_source":"Bennett_Grievance_Redressal_Policy.pdf","evidence":["Student Grievance Redressal Portal","dsa@"]},
+  {"id":"R5","question":"What is the grievance appeal decision deadline?","expected_source":"Bennett_Grievance_Redressal_Policy.pdf","evidence":["within five working days","appeal"]},
+  {"id":"R6","question":"How long are grievance records kept and are they confidential?","expected_source":"Bennett_Grievance_Redressal_Policy.pdf","evidence":["treated as confidential","one year"]},
+  {"id":"R7","question":"How much is the revised monthly hostel fee for existing PhD scholars?","expected_source":"Bennett_Hostel_Policy_Amendments_AY2026-27.pdf","evidence":["Rs.20,000 per month","existing PhD scholars"]},
+  {"id":"R8","question":"How is the existing PhD hostel fee paid?","expected_source":"Bennett_Hostel_Policy_Amendments_AY2026-27.pdf","evidence":["deducted directly","monthly stipend"]},
+  {"id":"R9","question":"What hostel sharing arrangement applies to existing PhD scholars?","expected_source":"Bennett_Hostel_Policy_Amendments_AY2026-27.pdf","evidence":["triple-sharing basis"]},
+  {"id":"R10","question":"Do new PhD scholars get university hostel accommodation from AY 2026-27?","expected_source":"Bennett_Hostel_Policy_Amendments_AY2026-27.pdf","evidence":["will not be accommodated","non-availability of beds"]},
+  {"id":"R11","question":"Are partial hostel fee payments allowed under the 2026-27 amendment?","expected_source":"Bennett_Hostel_Policy_Amendments_AY2026-27.pdf","evidence":["No pro-rata or partial refunds","no partial fee payments"]},
+  {"id":"R12","question":"What is the deadline for semester tuition fees?","expected_source":null,"evidence":[]}
+]
