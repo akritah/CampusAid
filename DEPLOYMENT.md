@@ -6,7 +6,7 @@ The policy assistant extracts text from PDF, DOCX, Markdown and text files, rank
 
 ## 1. Before deploying
 
-1. Commit and push the project to a GitHub repository. Keep `.env`, `.env.local`, passwords, database URLs and Render secrets out of Git. The local SQLite file is ignored by Git.
+1. Commit and push the project to a GitHub repository. Keep `.env`, `.env.local`, passwords, database URLs and Render secrets out of Git. The local SQLite file is ignored by Git. `.python-version` pins Render to Python 3.11.11, which is required by the pinned Torch 2.2.2 CPU wheel. If creating the service manually, also set `PYTHON_VERSION=3.11.11` under **Environment** so the service does not use Render's newer default Python runtime.
 2. Confirm `backend/models/complaint_classifier.pkl` is included in the pushed repository. It is a small trained classifier artifact required for grievance classification. The multilingual sentence-transformer weights are downloaded by Hugging Face on first backend start and cached under `/var/data/huggingface` on the Render disk.
 3. The repository includes Bennett University source PDFs, a source manifest, and searchable files under `backend/policy_documents`. Section 10 attendance text is indexed from the official 2024–25 Examination Manual because the local PDF copy has no reliably extractable text. Several other source PDFs are scans that require OCR for full retrieval coverage. Confirm current-year policies before using the assistant for operational decisions.
 

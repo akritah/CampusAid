@@ -11,6 +11,8 @@ python-multipart==0.0.6
 
 # ML - Multilingual Embeddings
 sentence-transformers==2.2.2
+# Torch 2.2.2 CPU wheels support Python through 3.11; backend/.python-version
+# pins Render to that compatible runtime.
 --extra-index-url https://download.pytorch.org/whl/cpu
 torch==2.2.2+cpu
 transformers==4.41.2
