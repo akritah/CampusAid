@@ -6,6 +6,7 @@
 - Rebuilt the Colab evaluator to display the saved real run and call the application's actual policy retriever/Gemini integration for new questions; removed hand-written answer output from the notebook.
 - Added the public Colab prototype link and clarified that it covers policy Q&A, not grievance submission or voice intake.
 - Recorded that Render's Python 3.11.11 dependency build succeeded but the Free service exceeded 512 MiB while loading the sentence-transformer and did not become live.
+- Added a documented Railway no-card Trial deployment path as a temporary option; its 1 GB limit and short-term usage credit are explicitly unverified for this model.
 
 ## 2026-11-21 — Milestone 2 preparation
 

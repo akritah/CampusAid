@@ -121,6 +121,18 @@ All signed-in browser requests use a 12-hour bearer token. The UI stores the tok
 
 The deployment is not considered successful until the actual Vercel and Render services pass these checks. A Render build on 2026-11-24 completed with Python 3.11.11, but the Free instance exceeded 512 MiB while loading the sentence-transformer at startup and never opened an HTTP port. The web app is not live; see [`docs/Q23_EVALUATOR_ACCESS.md`](docs/Q23_EVALUATOR_ACCESS.md) for the Colab evaluator fallback. A larger-memory backend instance or a redesign that reduces model memory is required before the full app can be deployed on Render.
 
+### No-card temporary backend option: Railway Trial
+
+If you need a hosted full-app attempt without entering card details, Railway currently offers new accounts a one-time 30-day Trial with up to 1 GB RAM per service and a $5 usage credit. The Trial can end when the credit is consumed. Afterward the no-card Free plan drops to 512 MB per service and $1 monthly usage, so it is not a durable replacement for a larger-memory service. The current CampusAid startup exceeded Render's 512 MiB limit; Railway's 1 GB Trial may fit, but this has not yet been deployed or verified. See [Railway Free Plan](https://docs.railway.com/pricing/free-plan) for current limits.
+
+1. In Railway, create a project from GitHub and choose repository `akritah/CampusAid`, branch `codex/campusaid-evaluator`.
+2. Set the backend service root directory to `/backend`, build command to `pip install -r requirements.txt`, and start command to `python run_backend.py`. `backend/.python-version` pins Python 3.11.11; Railway provides the `PORT` variable used by `run_backend.py`.
+3. Add a Railway PostgreSQL service in the same project. On the backend service, set `DATABASE_URL` to `${{Postgres.DATABASE_URL}}` (rename the reference if your database service has a different name). Set `APP_ENV=production`, `PYTHON_VERSION=3.11.11`, a random `SECRET_KEY`, `GEMINI_API_KEY`, `GEMINI_MODEL=gemini-3.5-flash-lite`, and `ALLOW_STAFF_REGISTRATION=false`. Set `DEMO_USERS_JSON` only if you want to provision evaluator accounts; keep its passwords private and at least 12 characters.
+4. Add the backend public domain in Railway and check `/health`. Then import the same branch into Vercel, use root directory `frontend/campusaid`, and set `NEXT_PUBLIC_API_URL` to the Railway HTTPS origin. Add the exact Vercel origin to backend `CORS_ORIGINS`, then redeploy both services.
+5. The committed policy PDFs are part of the repository and can be queried after startup. For this temporary trial, use Railway PostgreSQL for complaint records. Uploaded documents need a Railway volume mounted at `/data` with `POLICY_STORAGE_DIR=/data/policies`; trial data and volumes are not a long-term storage plan. Keep the monthly usage dashboard open; when the no-card credit is exhausted, services stop instead of converting to a paid plan.
+
+Railway's Trial can help with a short evaluator window, but it does not prove the service will fit within 1 GB. If it still runs out of memory, use the saved Colab evaluator link in [`docs/Q23_EVALUATOR_ACCESS.md`](docs/Q23_EVALUATOR_ACCESS.md) until model startup is reduced or a larger-memory host is available.
+
 ## 9. Local checks and troubleshooting
 
 ```powershell

@@ -10,6 +10,7 @@ The repository and branch are public. A standard Google sign-in may be required 
 ## Deployment and login status
 
 - **Full public web app:** Not available yet. Render completed the Python 3.11.11 dependency build but the Free instance exceeded its 512 MiB memory limit while loading the sentence-transformer model, before opening a port. The app has not been verified live.
+- **Next no-card hosting attempt:** Railway's new-account Trial provides up to 1 GB RAM for a limited period without a card, but this is not deployed or verified. Its later Free plan returns to 512 MB, so the Colab link above remains the available evaluator link until a hosted app passes its checks.
 - **Evaluator app login:** Not applicable to the Colab notebook; it does not use CampusAid authentication.
 - **Student username/password:** Not provided. Do not use a fabricated or default credential.
 - **Source repository:** https://github.com/akritah/CampusAid/tree/codex/campusaid-evaluator
